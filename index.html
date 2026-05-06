@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أكاديمية التفوق أون لاين - النظام المحاسبي</title>
+    <!-- تضمين مكتبات React و Tailwind و Lucide React عبر CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- استخدام نسخة مستقرة من أيقونات Lucide المتوافقة مع المتصفح -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c5a044; border-radius: 10px; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body class="bg-[#f8fafc]">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        /**
+         * تم عزل الكود داخل دالة لتجنب أخطاء تعارض المتغيرات العالمية (مثل Infinity)
+         */
+        (function() {
+            // الحصول على الأيقونات من مكتبة lucide العالمية
+            // ملاحظة: نستخدم 'lucide.icons' للوصول المباشر لتجنب تعارض الأسماء
+            const LucideIcons = window.lucide ? window.lucide.icons : {};
+
+            // مكوّن الأيقونة الذي يحول أيقونات Lucide إلى SVG داخل React
+            const Icon = ({ name, size = 20, className = "" }) => {
+                const iconRef = React.useRef(null);
+                
+                React.useEffect(() => {
+                    if (iconRef.current && name) {
+                        const iconData = typeof name === 'string' ? LucideIcons[name] : name;
+                        if (iconData) {
+                            // إنشاء الأيقونة برمجياً داخل العنصر
+                            const svg = lucide.createIcons({
+                                icons: { [name.name || 'icon']: iconData },
+                                attrs: { 
+                                    strokeWidth: 2,
+                                    width: size,
+                                    height: size,
+                                    class: className
+                                }
+                            });
+                        }
+                    }
+                }, [name, size, className]);
+
+                return <span ref={iconRef} className={`inline-flex items-center justify-center ${className}`}></span>;
+            };
+
+            // تعريف الأيقونات المستخدمة بالأسماء
+            const ICONS = {
+                Users: 'Users',
+                BookOpen: 'BookOpen',
+                CheckCircle: 'CheckCircle',
+                Clock: 'Clock',
+                FileText: 'FileText',
+                LayoutDashboard: 'LayoutDashboard',
+                PlusCircle: 'PlusCircle',
+                Search: 'Search',
+                UserCheck: 'UserCheck',
+                AlertCircle: 'AlertCircle',
+                DollarSign: 'DollarSign',
+                Mail: 'Mail',
+                UserPlus: 'UserPlus',
+                LinkIcon: 'Link',
+                LogIn: 'LogIn',
+                LogOut: 'LogOut',
+                UserCircle: 'UserCircle',
+                GraduationCap: 'GraduationCap',
+                ShieldCheck: 'ShieldCheck',
+                BookMarked: 'BookMarked',
+                ChevronLeft: 'ChevronLeft',
+                Briefcase: 'Briefcase',
+                Key: 'Key',
+                Printer: 'Printer',
+                Star: 'Star',
+                Copy: 'Copy',
+                Check: 'Check',
+                Info: 'Info'
+            };
+
+            const App = () => {
+                const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+                const [currentUser, setCurrentUser] = React.useState(null);
+                const [loginRole, setLoginRole] = React.useState('admin'); 
+                const [loginForm, setLoginForm] = React.useState({ username: '', password: '' });
+                const [view, setView] = React.useState('dashboard');
+                const [loginError, setLoginError] = React.useState('');
+
+                const ADMIN_CREDENTIALS = { email: 'zakiabuillan@gmail.com', password: 'zenazaki@2026' };
+
+                const [teachers, setTeachers] = React.useState([
+                    { id: 't1', name: 'أ. محمد أحمد', hourlyRate: 50, username: 'teacher1', password: '123' },
+                    { id: 't2', name: 'أ. سارة محمود', hourlyRate: 60, username: 'teacher2', password: '123' },
+                ]);
+
+                const [students, setStudents] = React.useState([
+                    { id: 's1', name: 'ياسين كمال', regNo: 'TAF-2024-101' },
+                    { id: 's2', name: 'لينا عمر', regNo: 'TAF-2024-102' },
+                ]);
+
+                const [assignments, setAssignments] = React.useState([
+                    { studentId: 's1', teacherId: 't1' },
+                    { studentId: 's2', teacherId: 't1' },
+                ]);
+
+                const [lessons, setLessons] = React.useState([
+                    { id: 1, teacherId: 't1', studentId: 's1', subject: 'اللغة العربية', hours: 2, date: '2024-05-15', status: 'approved' },
+                ]);
+
+                const [reportFilters, setReportFilters] = React.useState({ studentId: '', startDate: '', endDate: '' });
+                const [newStudent, setNewStudent] = React.useState({ name: '' });
+                const [newTeacher, setNewTeacher] = React.useState({ name: '', rate: '', username: '', password: '' });
+                const [assignData, setAssignData] = React.useState({ studentId: '', teacherId: '' });
+                const [lessonEntry, setLessonEntry] = React.useState({ studentId: '', subject: '', hours: '', date: new Date().toISOString().split('T')[0] });
+
+                const handleLogin = (e) => {
+                    e.preventDefault();
+                    setLoginError('');
+                    if (loginRole === 'admin') {
+                        if (loginForm.username === ADMIN_CREDENTIALS.email && loginForm.password === ADMIN_CREDENTIALS.password) {
+                            setIsLoggedIn(true);
+                            setCurrentUser({ id: 'admin', name: 'زكي أبو علان', role: 'admin' });
+                        } else { setLoginError('بيانات دخول المدير غير صحيحة'); }
+                    } else {
+                        const teacher = teachers.find(t => t.username === loginForm.username && t.password === loginForm.password);
+                        if (teacher) {
+                            setIsLoggedIn(true);
+                            setCurrentUser({ ...teacher, role: 'teacher' });
+                        } else { setLoginError('اسم المستخدم أو كلمة المرور غير صحيحة'); }
+                    }
+                };
+
+                const handleLogout = () => {
+                    setIsLoggedIn(false);
+                    setCurrentUser(null);
+                    setLoginForm({ username: '', password: '' });
+                    setView('dashboard');
+                };
+
+                const filteredLessons = React.useMemo(() => {
+                    if (!currentUser) return [];
+                    return lessons.filter(l => {
+                        if (currentUser.role === 'teacher' && l.teacherId !== currentUser.id) return false;
+                        let match = true;
+                        if (reportFilters.studentId && l.studentId !== reportFilters.studentId) match = false;
+                        if (reportFilters.startDate && l.date < reportFilters.startDate) match = false;
+                        if (reportFilters.endDate && l.date > reportFilters.endDate) match = false;
+                        return match;
+                    });
+                }, [lessons, reportFilters, currentUser]);
+
+                const stats = React.useMemo(() => {
+                    const approved = lessons.filter(l => l.status === 'approved');
+                    const totalHours = approved.reduce((sum, l) => sum + l.hours, 0);
+                    const totalFinance = approved.reduce((sum, l) => {
+                        const t = teachers.find(teach => teach.id === l.teacherId);
+                        return sum + (l.hours * (t?.hourlyRate || 0));
+                    }, 0);
+                    return { totalHours, totalFinance, pending: lessons.filter(l => l.status === 'pending').length };
+                }, [lessons, teachers]);
+
+                const teacherStudentStats = React.useMemo(() => {
+                    if (!currentUser || currentUser.role !== 'teacher') return [];
+                    const myStudentsIds = assignments.filter(a => a.teacherId === currentUser.id).map(a => a.studentId);
+                    return myStudentsIds.map(sid => {
+                        const student = students.find(s => s.id === sid);
+                        const studentLessons = lessons.filter(l => l.studentId === sid && l.teacherId === currentUser.id && l.status === 'approved');
+                        const totalHours = studentLessons.reduce((sum, l) => sum + l.hours, 0);
+                        return { id: sid, name: student?.name, regNo: student?.regNo, totalHours, lessonCount: studentLessons.length };
+                    });
+                }, [currentUser, assignments, students, lessons]);
+
+                const Logo = ({ size = "md" }) => (
+                    <div className={`flex flex-col items-center ${size === 'lg' ? 'scale-110 mb-6' : 'scale-75'}`}>
+                        <div className="relative">
+                            <div className="bg-white p-3 rounded-full shadow-xl border-4 border-[#c5a044]">
+                                <Icon name={ICONS.BookOpen} size={size === 'lg' ? 48 : 32} className="text-[#1a3a5f]" />
+                            </div>
+                            <div className="absolute -top-2 -right-2 text-[#c5a044]">
+                                <Icon name={ICONS.Star} size={24} />
+                            </div>
+                        </div>
+                        <div className="mt-3 text-center">
+                            <h1 className={`font-black text-[#1a3a5f] leading-none ${size === 'lg' ? 'text-2xl' : 'text-lg'}`}>أكاديمية التفوق</h1>
+                            <div className="flex items-center justify-center gap-1 mt-1">
+                                <div className="h-[2px] w-4 bg-[#c5a044]"></div>
+                                <span className={`font-bold text-[#c5a044] uppercase tracking-widest ${size === 'lg' ? 'text-xs' : 'text-[10px]'}`}>أون لاين</span>
+                                <div className="h-[2px] w-4 bg-[#c5a044]"></div>
+                            </div>
+                        </div>
+                    </div>
+                );
+
+                if (!isLoggedIn) {
+                    return (
+                        <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center p-4">
+                            <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-8 border-b-[12px] border-[#c5a044] relative">
+                                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#1a3a5f] via-[#c5a044] to-[#1a3a5f]"></div>
+                                <Logo size="lg" />
+                                <div className="flex bg-slate-100 p-1 rounded-2xl mb-6">
+                                    <button onClick={() => setLoginRole('admin')} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${loginRole === 'admin' ? 'bg-[#1a3a5f] text-white shadow-lg' : 'text-slate-400'}`}>مدير المنصة</button>
+                                    <button onClick={() => setLoginRole('teacher')} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${loginRole === 'teacher' ? 'bg-[#1a3a5f] text-white shadow-lg' : 'text-slate-400'}`}>حساب المعلم</button>
+                                </div>
+                                <form onSubmit={handleLogin} className="space-y-4">
+                                    {loginError && <div className="text-red-500 text-center text-xs font-bold bg-red-50 p-2 rounded-xl border border-red-100">{loginError}</div>}
+                                    <div className="relative">
+                                        <input type="text" className="w-full p-4 pr-12 bg-slate-50 border rounded-2xl outline-none focus:border-[#1a3a5f] font-bold" placeholder="اسم المستخدم أو البريد" value={loginForm.username} onChange={e => setLoginForm({...loginForm, username: e.target.value})} required />
+                                        <div className="absolute right-4 top-4 text-slate-300"><Icon name={ICONS.UserCircle} /></div>
+                                    </div>
+                                    <div className="relative">
+                                        <input type="password" className="w-full p-4 pr-12 bg-slate-50 border rounded-2xl outline-none focus:border-[#1a3a5f] font-bold" placeholder="كلمة المرور" value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})} required />
+                                        <div className="absolute right-4 top-4 text-slate-300"><Icon name={ICONS.Key} /></div>
+                                    </div>
+                                    <button className="w-full bg-[#1a3a5f] text-white py-4 rounded-2xl font-black shadow-lg hover:bg-[#0d223d] transition-all">دخول النظام</button>
+                                </form>
+                            </div>
+                        </div>
+                    );
+                }
+
+                return (
+                    <div className="min-h-screen flex flex-row-reverse overflow-hidden">
+                        {/* Sidebar */}
+                        <div className="w-72 bg-[#1a3a5f] text-white flex flex-col p-6 shadow-2xl shrink-0 z-30 no-print">
+                            <div className="mb-10 text-center border-b border-white/5 pb-6">
+                                <Logo size="sm" />
+                            </div>
+                            <nav className="flex-1 space-y-1">
+                                <button onClick={() => setView('dashboard')} className={`w-full text-right p-3.5 rounded-xl flex items-center gap-3 transition-all ${view === 'dashboard' ? 'bg-[#c5a044] text-white shadow-lg' : 'hover:bg-white/5 text-white/60'}`}><Icon name={ICONS.LayoutDashboard} size={18}/>الرئيسية</button>
+                                <button onClick={() => setView('reports')} className={`w-full text-right p-3.5 rounded-xl flex items-center gap-3 transition-all ${view === 'reports' ? 'bg-[#c5a044] text-white shadow-lg' : 'hover:bg-white/5 text-white/60'}`}><Icon name={ICONS.FileText} size={18}/>الكشوفات</button>
+                                {currentUser.role === 'admin' && (
+                                    <>
+                                        <div className="pt-4 pb-2 px-4 text-[10px] font-black text-white/20 uppercase tracking-widest">الإدارة</div>
+                                        <button onClick={() => setView('teachers')} className={`w-full text-right p-3.5 rounded-xl flex items-center gap-3 transition-all ${view === 'teachers' ? 'bg-[#c5a044] text-white shadow-lg' : 'hover:bg-white/5 text-white/60'}`}><Icon name={ICONS.Users} size={18}/>المعلمون</button>
+                                        <button onClick={() => setView('students')} className={`w-full text-right p-3.5 rounded-xl flex items-center gap-3 transition-all ${view === 'students' ? 'bg-[#c5a044] text-white shadow-lg' : 'hover:bg-white/5 text-white/60'}`}><Icon name={ICONS.GraduationCap} size={18}/>الطلاب</button>
+                                        <button onClick={() => setView('assign')} className={`w-full text-right p-3.5 rounded-xl flex items-center gap-3 transition-all ${view === 'assign' ? 'bg-[#c5a044] text-white shadow-lg' : 'hover:bg-white/5 text-white/60'}`}><Icon name={ICONS.LinkIcon} size={18}/>التنسيب</button>
+                                    </>
+                                )}
+                            </nav>
+                            <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-red-400 font-bold py-3 hover:text-red-300 transition-colors border-t border-white/5"><Icon name={ICONS.LogOut} size={18}/>خروج</button>
+                        </div>
+
+                        {/* Main Content */}
+                        <main className="flex-1 p-8 lg:p-12 overflow-y-auto bg-[#f8fafc]">
+                            <header className="flex justify-between items-center mb-10 no-print">
+                                <div>
+                                    <h2 className="text-3xl font-black text-slate-800 tracking-tight">
+                                        {view === 'dashboard' && 'لوحة التحكم المركزية'}
+                                        {view === 'reports' && 'استخراج كشوفات الحصص'}
+                                        {view === 'students' && 'سجل بيانات الطلاب'}
+                                        {view === 'teachers' && 'إدارة حسابات المعلمين'}
+                                        {view === 'assign' && 'تنسيب الطلاب للمواد'}
+                                        {view === 'add-student' && 'تسجيل طالب جديد'}
+                                        {view === 'add-lesson' && 'تسجيل حصة تعليمية'}
+                                    </h2>
+                                    <p className="text-slate-400 font-bold text-sm mt-1">أكاديمية التفوق أون لاين</p>
+                                </div>
+                                <button onClick={() => setView(currentUser.role === 'admin' ? 'add-student' : 'add-lesson')} className="bg-[#c5a044] text-[#1a3a5f] px-8 py-3 rounded-2xl font-black text-sm shadow-xl hover:bg-[#d4b055] transition-all flex items-center gap-2">
+                                    <Icon name={ICONS.PlusCircle} size={20} />
+                                    {currentUser.role === 'admin' ? 'إضافة طالب' : 'تسجيل حصة'}
+                                </button>
+                            </header>
+
+                            {view === 'dashboard' && (
+                                <div className="space-y-10 no-print">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 relative overflow-hidden group">
+                                            <div className="relative z-10">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">إجمالي الحصص</p>
+                                                <p className="text-4xl font-black text-[#1a3a5f]">{lessons.length}</p>
+                                            </div>
+                                            <div className="absolute right-[-10px] bottom-[-10px] text-slate-50 group-hover:text-blue-50 transition-colors"><Icon name={ICONS.BookMarked} size={100} /></div>
+                                        </div>
+                                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 relative overflow-hidden group">
+                                            <div className="relative z-10">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">بانتظار الاعتماد</p>
+                                                <p className="text-4xl font-black text-[#c5a044]">{stats.pending}</p>
+                                            </div>
+                                            <div className="absolute right-[-10px] bottom-[-10px] text-slate-50 group-hover:text-amber-50 transition-colors"><Icon name={ICONS.Clock} size={100} /></div>
+                                        </div>
+                                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 relative overflow-hidden group">
+                                            <div className="relative z-10">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">الميزانية المعتمدة</p>
+                                                <p className="text-4xl font-black text-emerald-600">{stats.totalFinance} ₪</p>
+                                            </div>
+                                            <div className="absolute right-[-10px] bottom-[-10px] text-slate-50 group-hover:text-emerald-50 transition-colors"><Icon name={ICONS.DollarSign} size={100} /></div>
+                                        </div>
+                                    </div>
+
+                                    {currentUser.role === 'teacher' && (
+                                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100">
+                                            <h3 className="font-black text-[#1a3a5f] mb-6 flex items-center gap-2"><Icon name={ICONS.Users} className="text-[#c5a044]"/> طلابك المنسوبين ومجاميع ساعاتهم</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {teacherStudentStats.map(s => (
+                                                    <div key={s.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:shadow-md transition-all text-center">
+                                                        <p className="font-black text-slate-800 text-sm mb-1">{s.name}</p>
+                                                        <p className="text-[9px] font-bold text-[#c5a044] mb-4 tracking-widest">{s.regNo}</p>
+                                                        <p className="text-2xl font-black text-[#1a3a5f]">{s.totalHours} <span className="text-xs">ساعة</span></p>
+                                                    </div>
+                                                ))}
+                                                {teacherStudentStats.length === 0 && <p className="col-span-full text-center text-slate-400 py-10 italic">لا يوجد طلاب منسوبين لك حالياً</p>}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {view === 'reports' && (
+                                <div className="space-y-6">
+                                    <div className="bg-white p-6 rounded-[1.5rem] shadow-lg border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-4 no-print">
+                                        <select className="p-3 bg-slate-50 border rounded-xl font-bold text-xs outline-none" value={reportFilters.studentId} onChange={e => setReportFilters({...reportFilters, studentId: e.target.value})}>
+                                            <option value="">جميع الطلاب</option>
+                                            {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </select>
+                                        <input type="date" className="p-3 bg-slate-50 border rounded-xl font-bold text-xs outline-none" value={reportFilters.startDate} onChange={e => setReportFilters({...reportFilters, startDate: e.target.value})} />
+                                        <input type="date" className="p-3 bg-slate-50 border rounded-xl font-bold text-xs outline-none" value={reportFilters.endDate} onChange={e => setReportFilters({...reportFilters, endDate: e.target.value})} />
+                                    </div>
+                                    <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-slate-100 print-area">
+                                        <div className="p-6 bg-[#1a3a5f] text-white flex justify-between items-center">
+                                            <h3 className="font-black flex items-center gap-2"><Icon name={ICONS.FileText} size={18} className="text-[#c5a044]"/> كشف الحصص الدراسي</h3>
+                                            <button onClick={() => window.print()} className="bg-[#c5a044] text-[#1a3a5f] px-5 py-2 rounded-xl font-black text-xs flex items-center gap-2 hover:bg-white transition-all no-print"><Icon name={ICONS.Printer} size={14}/> طباعة</button>
+                                        </div>
+                                        <table className="w-full text-right text-xs">
+                                            <thead className="bg-slate-50 text-slate-400 font-black uppercase border-b">
+                                                <tr>
+                                                    <th className="p-5">التاريخ</th>
+                                                    <th className="p-5">المادة</th>
+                                                    <th className="p-5">الطالب</th>
+                                                    <th className="p-5 text-center">المدة</th>
+                                                    <th className="p-5">الحالة</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-50">
+                                                {filteredLessons.map(l => (
+                                                    <tr key={l.id} className="hover:bg-slate-50 transition-colors">
+                                                        <td className="p-5 font-bold text-slate-500">{l.date}</td>
+                                                        <td className="p-5 text-[#c5a044] font-black">{l.subject}</td>
+                                                        <td className="p-5 font-black text-slate-800">{students.find(s=>s.id===l.studentId)?.name}</td>
+                                                        <td className="p-5 text-center font-black text-[#1a3a5f]">{l.hours} س</td>
+                                                        <td className="p-5">
+                                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${l.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{l.status === 'approved' ? 'معتمدة' : 'مراجعة'}</span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {filteredLessons.length === 0 && <tr><td colSpan="5" className="p-20 text-center text-slate-300 font-bold italic">لا توجد سجلات تطابق البحث</td></tr>}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {view === 'add-student' && (
+                                <div className="max-w-xl mx-auto bg-white p-12 rounded-[2.5rem] shadow-2xl border-t-[10px] border-[#c5a044] no-print">
+                                    <h3 className="text-2xl font-black text-[#1a3a5f] mb-8 text-center">تسجيل طالب جديد</h3>
+                                    <form onSubmit={(e) => { e.preventDefault(); const s={id:`s${Date.now()}`, name:newStudent.name, regNo: 'TAF-'+Math.floor(Math.random()*10000)}; setStudents([...students, s]); setNewStudent({name:''}); setView('students'); }} className="space-y-6">
+                                        <div className="space-y-1">
+                                            <label className="block text-[10px] font-black text-slate-400 mr-4 uppercase">اسم الطالب الرباعي</label>
+                                            <input type="text" className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-[#1a3a5f] font-black text-lg transition-all" placeholder="ادخل الاسم هنا..." value={newStudent.name} onChange={e => setNewStudent({ name: e.target.value })} required />
+                                        </div>
+                                        <button className="w-full bg-[#1a3a5f] text-white py-5 rounded-[1.5rem] font-black text-xl shadow-2xl hover:bg-[#0d223d] transition-all transform active:scale-95">تأكيد التسجيل</button>
+                                    </form>
+                                </div>
+                            )}
+                            
+                            {view === 'add-lesson' && (
+                                <div className="max-w-xl mx-auto bg-white p-12 rounded-[2.5rem] shadow-2xl border-t-[10px] border-[#c5a044] no-print">
+                                    <h3 className="text-2xl font-black text-[#1a3a5f] mb-8 text-center">تسجيل حصة دراسية جديدة</h3>
+                                    <form onSubmit={(e) => { e.preventDefault(); const l={id:Date.now(), teacherId:currentUser.id, ...lessonEntry, hours:parseFloat(lessonEntry.hours), status:'pending'}; setLessons([l,...lessons]); setView('dashboard'); }} className="space-y-6">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="block text-[10px] font-black text-slate-400 mr-4 uppercase">الطالب</label>
+                                                <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={lessonEntry.studentId} onChange={e=>setLessonEntry({...lessonEntry, studentId:e.target.value})} required>
+                                                    <option value="">-- اختر الطالب --</option>
+                                                    {assignments.filter(a=>a.teacherId===currentUser?.id).map(a=>{const s=students.find(st=>st.id===a.studentId); return <option key={a.studentId} value={a.studentId}>{s?.name}</option>;})}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="block text-[10px] font-black text-slate-400 mr-4 uppercase">المادة</label>
+                                                <input type="text" placeholder="مثل: التاريخ" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold" value={lessonEntry.subject} onChange={e => setLessonEntry({...lessonEntry, subject: e.target.value})} required />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="block text-[10px] font-black text-slate-400 mr-4 uppercase">المدة بالساعات</label>
+                                                <input type="number" step="0.5" className="w-full p-4 bg-slate-50 border rounded-2xl font-black text-center text-xl" value={lessonEntry.hours} onChange={e => setLessonEntry({...lessonEntry, hours: e.target.value})} required />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="block text-[10px] font-black text-slate-400 mr-4 uppercase">التاريخ</label>
+                                                <input type="date" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold" value={lessonEntry.date} onChange={e => setLessonEntry({...lessonEntry, date: e.target.value})} required />
+                                            </div>
+                                        </div>
+                                        <button className="w-full bg-[#1a3a5f] text-white py-5 rounded-[1.5rem] font-black text-xl shadow-2xl hover:bg-[#0d223d] transition-all active:scale-95">حفظ وإرسال للمراجعة</button>
+                                    </form>
+                                </div>
+                            )}
+
+                            {view === 'students' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 no-print">
+                                    {students.map(s => (
+                                        <div key={s.id} className="bg-white p-6 rounded-2xl border shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 w-1 h-full bg-[#c5a044]"></div>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <p className="font-black text-[#1a3a5f]">{s.name}</p>
+                                                <Icon name={ICONS.UserCircle} className="text-slate-100 group-hover:text-slate-200 transition-colors" size={32} />
+                                            </div>
+                                            <p className="text-[10px] font-bold text-[#c5a044] tracking-widest uppercase">{s.regNo}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {view === 'teachers' && (
+                                <div className="space-y-8 no-print">
+                                    <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100">
+                                        <h3 className="font-black text-[#1a3a5f] mb-6 flex items-center gap-2"><Icon name={ICONS.UserPlus} className="text-[#c5a044]"/> إنشاء حساب معلم جديد</h3>
+                                        <form onSubmit={(e) => { e.preventDefault(); const t={id:`t${Date.now()}`, ...newTeacher, hourlyRate:parseFloat(newTeacher.rate)}; setTeachers([...teachers, t]); setNewTeacher({name:'',rate:'',username:'',password:''}); setView('dashboard'); }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <input type="text" placeholder="اسم المعلم" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" value={newTeacher.name} onChange={e=>setNewTeacher({...newTeacher, name:e.target.value})} required />
+                                            <input type="number" placeholder="سعر الساعة (₪)" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" value={newTeacher.rate} onChange={e=>setNewTeacher({...newTeacher, rate:e.target.value})} required />
+                                            <input type="text" placeholder="اسم المستخدم" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" value={newTeacher.username} onChange={e=>setNewTeacher({...newTeacher, username:e.target.value})} required />
+                                            <input type="password" placeholder="كلمة المرور" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" value={newTeacher.password} onChange={e=>setNewTeacher({...newTeacher, password:e.target.value})} required />
+                                            <button className="md:col-span-2 bg-[#1a3a5f] text-white py-4 rounded-xl font-black shadow-lg">إضافة المعلم للنظام</button>
+                                        </form>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {teachers.map(t=>(<div key={t.id} className="bg-white p-4 rounded-xl border flex justify-between items-center"><span className="font-black text-slate-800">{t.name}</span><span className="text-[10px] font-bold text-[#c5a044]">{t.hourlyRate} ₪/س</span></div>))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {view === 'assign' && (
+                                <div className="max-w-xl mx-auto bg-white p-12 rounded-[2.5rem] shadow-xl border-t-[10px] border-[#c5a044] no-print">
+                                    <h3 className="text-2xl font-black text-[#1a3a5f] mb-8 text-center flex items-center justify-center gap-3"><Icon name={ICONS.LinkIcon} size={30} className="text-[#c5a044]"/> تنسيب الطلاب للمواد</h3>
+                                    <form onSubmit={(e) => { e.preventDefault(); setAssignments([...assignments, assignData]); setAssignData({studentId:'', teacherId:''}); setView('dashboard'); }} className="space-y-6">
+                                        <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={assignData.studentId} onChange={e => setAssignData({...assignData, studentId: e.target.value})} required>
+                                            <option value="">-- اختر الطالب --</option>
+                                            {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </select>
+                                        <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={assignData.teacherId} onChange={e => setAssignData({...assignData, teacherId: e.target.value})} required>
+                                            <option value="">-- اختر المعلم المختص --</option>
+                                            {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                        </select>
+                                        <button className="w-full bg-[#1a3a5f] text-white py-4 rounded-2xl font-black shadow-xl">إتمام التنسيب</button>
+                                    </form>
+                                </div>
+                            )}
+                        </main>
+                    </div>
+                );
+            };
+
+            const container = document.getElementById('root');
+            const root = ReactDOM.createRoot(container);
+            root.render(<App />);
+        })();
+    </script>
+</body>
+</html>
