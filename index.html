@@ -2,470 +2,597 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أكاديمية التفوق أون لاين - النظام المحاسبي</title>
-    <!-- تضمين مكتبات React و Tailwind و Lucide React عبر CDN -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>أكاديمية التفوق - النظام المحاسبي الذكي</title>
+    <!-- تضمين المكتبات الأساسية -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- استخدام نسخة مستقرة من أيقونات Lucide المتوافقة مع المتصفح -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Cairo', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c5a044; border-radius: 10px; }
-        @media print {
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            body { background: white; }
+        :root { --primary: #1a3a5f; --gold: #c5a044; --bg: #f8fafc; }
+        body { font-family: 'Cairo', sans-serif; background-color: var(--bg); color: #1e293b; margin: 0; touch-action: manipulation; }
+        
+        .royal-blue { background-color: #1a3a5f !important; }
+        .royal-gold { background-color: #c5a044 !important; }
+        .text-royal-blue { color: #1a3a5f !important; }
+        .text-royal-gold { color: #c5a044 !important; }
+        
+        aside { background-color: #1a3a5f !important; color: white !important; box-shadow: -10px 0 40px rgba(0,0,0,0.3); }
+        .sidebar-item-active { background-color: #c5a044 !important; color: #1a3a5f !important; font-weight: 900 !important; }
+        .icon-gold { color: #c5a044 !important; }
+        .icon-blue { color: #1a3a5f !important; }
+
+        .login-page-bg {
+            background-image: url('شعار .jpeg');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            position: relative;
+            background-color: #f1f5f9;
+        }
+        .login-page-overlay {
+            background: rgba(241, 245, 249, 0.96);
+            position: absolute; inset: 0; z-index: 1;
+        }
+        .login-card {
+            position: relative; z-index: 10;
+            background: #ffffff;
+            border: 3px solid #1a3a5f;
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.35);
+            border-radius: 2.5rem;
+        }
+
+        .clear-input {
+            border: 2px solid #1a3a5f !important;
+            color: #000000 !important;
+            font-weight: 800 !important;
+            background: #ffffff !important;
+        }
+        .en-input { direction: ltr !important; text-align: left !important; }
+
+        .alert-toast {
+            position: fixed; top: 25px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; animation: slideDown 0.5s ease-out;
+        }
+        @keyframes slideDown { from { top: -100px; opacity: 0; } to { top: 25px; opacity: 1; } }
+
+        .btn-gold { background-color: #c5a044 !important; color: #1a3a5f !important; font-weight: 900 !important; border-radius: 1rem; }
+        .btn-update { background-color: #10b981 !important; color: white !important; font-weight: 900 !important; border-radius: 1rem; }
+        .btn-whatsapp { background-color: #25d366 !important; color: white !important; font-weight: 900 !important; border-radius: 1rem; }
+        .btn-ai { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important; color: white !important; font-weight: 900 !important; border-radius: 1rem; }
+        
+        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 1rem; border: 1px solid #e2e8f0; }
+        button, input, select { min-height: 52px; outline: none; }
+        
+        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .teacher-row:hover { background-color: #f1f5f9; cursor: pointer; transform: scale(1.005); transition: all 0.2s; }
+        
+        .ai-result-box {
+            background: #fdfdfd;
+            border: 2px dashed #6366f1;
+            padding: 1.5rem;
+            border-radius: 1.5rem;
+            line-height: 1.8;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.1);
         }
     </style>
 </head>
-<body class="bg-[#f8fafc]">
+<body>
     <div id="root"></div>
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        window.fb = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc };
+    </script>
+
     <script type="text/babel">
-        /**
-         * تم عزل الكود داخل دالة لتجنب أخطاء تعارض المتغيرات العالمية (مثل Infinity)
-         */
-        (function() {
-            // الحصول على الأيقونات من مكتبة lucide العالمية
-            // ملاحظة: نستخدم 'lucide.icons' للوصول المباشر لتجنب تعارض الأسماء
-            const LucideIcons = window.lucide ? window.lucide.icons : {};
+        const { useState, useEffect, useMemo, useRef } = React;
 
-            // مكوّن الأيقونة الذي يحول أيقونات Lucide إلى SVG داخل React
-            const Icon = ({ name, size = 20, className = "" }) => {
-                const iconRef = React.useRef(null);
+        // --- إعدادات المدير ---
+        const MANAGER_PHONE = "972509329568"; 
+
+        // --- Gemini AI Logic ---
+        const apiKey = ""; 
+        const callGeminiAI = async (prompt) => {
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: { parts: [{ text: "أنت خبير محاسبي وتربوي مساعد لأكاديمية التفوق التعليمية." }] }
+                    })
+                });
+                const result = await response.json();
+                return result.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، لم أتمكن من التحليل.";
+            } catch (error) { throw error; }
+        };
+
+        // --- المكونات المساعدة ---
+        const Icon = ({ name, size = 32, className = "" }) => {
+            const iconRef = useRef(null);
+            useEffect(() => {
+                const renderIcon = () => {
+                    if (iconRef.current && window.lucide) {
+                        iconRef.current.innerHTML = '';
+                        const iconElement = document.createElement('i');
+                        const lucideName = name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+                        iconElement.setAttribute('data-lucide', lucideName);
+                        iconElement.style.width = `${size}px`;
+                        iconElement.style.height = `${size}px`;
+                        iconRef.current.appendChild(iconElement);
+                        window.lucide.createIcons();
+                    }
+                };
+                renderIcon();
+            }, [name, size, className]);
+            return <span ref={iconRef} className={`inline-flex items-center justify-center ${className}`} style={{width: size, height: size}}></span>;
+        };
+
+        const NavItem = ({ icon, label, active, onClick, highlight = false }) => (
+            <button onClick={onClick} className={`w-full text-right p-4 rounded-[1.5rem] flex items-center gap-4 transition-all duration-300 ${active ? 'sidebar-item-active shadow-xl' : 'hover:bg-white/10 text-white/80 font-bold'} ${highlight && !active ? 'border-r-8 border-[#c5a044] bg-white/5' : ''}`}>
+                <Icon name={icon} size={28} className={active ? 'icon-blue' : 'icon-gold'} />
+                <span className="text-[17px] tracking-tight">{label}</span>
+            </button>
+        );
+
+        const StatCard = ({ icon, label, value, color }) => (
+            <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 text-center animate-fade-in relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: color }}></div>
+                <div className="p-5 rounded-2xl mb-4 inline-block shadow-inner group-hover:scale-110 transition-transform" style={{ backgroundColor: `${color}15`, color: color }}>
+                    <Icon name={icon} size={35} />
+                </div>
+                <p className="text-[11px] text-slate-400 uppercase font-black mb-1 tracking-widest">{label}</p>
+                <p className="text-3xl font-black text-slate-800 uppercase tracking-tighter">{value}</p>
+            </div>
+        );
+
+        const App = () => {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [user, setUser] = useState(null);
+            const [currentUserData, setCurrentUserData] = useState(null);
+            const [loginRole, setLoginRole] = useState('admin');
+            const [loginForm, setLoginForm] = useState({ user: '', pass: '', remember: false });
+            const [showPassword, setShowPassword] = useState(false);
+            const [view, setView] = useState('dashboard');
+            const [isSidebarOpen, setSidebarOpen] = useState(false);
+            const [loading, setLoading] = useState(true);
+            const [isActionLoading, setIsActionLoading] = useState(false);
+            const [alert, setAlert] = useState({ show: false, msg: '', type: 'success' });
+
+            const [teachers, setTeachers] = useState([]);
+            const [students, setStudents] = useState([]);
+            const [assignments, setAssignments] = useState([]);
+            const [lessons, setLessons] = useState([]);
+            
+            const [reportFilters, setReportFilters] = useState({ personId: '', personRole: '', startDate: '', endDate: '' });
+            const [aiResult, setAiResult] = useState('');
+            const [aiLoading, setAiLoading] = useState(false);
+            
+            // حالة تعديل المعلم
+            const [editingTeacher, setEditingTeacher] = useState(null);
+            const [confirmModal, setConfirmModal] = useState({ show: false, data: null });
+
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'at-tafawuq-pro-stable-v10-fixed';
+
+            useEffect(() => {
+                const init = async () => {
+                    const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, collection, onSnapshot } = window.fb;
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    const db = getFirestore(app);
+
+                    const startAuth = async () => {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else { await signInAnonymously(auth); }
+                    };
+                    await startAuth();
+
+                    onAuthStateChanged(auth, u => { if(u) setUser(u); setLoading(false); });
+
+                    const base = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
+                    onSnapshot(base('teachers'), s => setTeachers(s.docs.map(d => ({id: d.id, ...d.data()}))));
+                    onSnapshot(base('students'), s => setStudents(s.docs.map(d => ({id: d.id, ...d.data()}))));
+                    onSnapshot(base('assignments'), s => setAssignments(s.docs.map(d => ({id: d.id, ...d.data()}))));
+                    onSnapshot(base('lessons'), s => setLessons(s.docs.map(d => ({id: d.id, ...d.data()}))));
+                };
+                init();
+            }, []);
+
+            // ميزة "تذكرني" عند تحميل الصفحة
+            useEffect(() => {
+                const saved = localStorage.getItem('tafawuq_saved_creds');
+                if (saved) {
+                    const creds = JSON.parse(saved);
+                    setLoginForm(prev => ({ ...prev, user: creds.user, pass: creds.pass, remember: true }));
+                }
+            }, []);
+
+            const showAlert = (msg, type = 'success') => {
+                setAlert({ show: true, msg, type });
+                setTimeout(() => setAlert({ show: false, msg: '', type: 'success' }), 3000);
+            };
+
+            const dbOp = async (col, data, id = null) => {
+                if (!user) return;
+                setIsActionLoading(true);
+                const { getFirestore, doc, setDoc, addDoc, deleteDoc, collection } = window.fb;
+                const db = getFirestore();
+                const path = ['artifacts', appId, 'public', 'data', col];
+                try {
+                    if (id) {
+                        const docRef = doc(db, ...path, id);
+                        if (!data) await deleteDoc(docRef);
+                        else await setDoc(docRef, data, { merge: true });
+                    } else { await addDoc(collection(db, ...path), data); }
+                    return true;
+                } catch (e) { showAlert('خطأ في العملية', 'error'); return false; }
+                finally { setIsActionLoading(false); }
+            };
+
+            const handleTeacherSubmit = async (e) => {
+                e.preventDefault();
+                const f = e.target.elements;
+                const data = {
+                    name: f.name.value.trim(),
+                    specialty: f.specialty.value.trim(),
+                    hourlyRate: parseFloat(f.rate.value),
+                    username: f.user.value.trim().toLowerCase(),
+                    password: f.pass.value.trim()
+                };
+
+                const res = await dbOp('teachers', data, editingTeacher ? editingTeacher.id : null);
+                if(res) {
+                    showAlert(editingTeacher ? 'تم تحديث بيانات المعلم' : 'تم إنشاء حساب المعلم');
+                    e.target.reset();
+                    setEditingTeacher(null);
+                }
+            };
+
+            const sendWhatsAppMessage = (lessonData) => {
+                const teacherName = currentUserData?.name || "...";
+                const studentName = students.find(s => s.id === lessonData.studentId)?.name || "...";
+                const message = `*تحية طيبة، تم تسجيل حصة جديدة في أكاديمية التفوق:*%0A%0A` +
+                                `*المعلم:* ${teacherName}%0A` +
+                                `*الطالب:* ${studentName}%0A` +
+                                `*المادة:* ${lessonData.subject}%0A` +
+                                `*المدة:* ${lessonData.hours} ساعة و ${lessonData.minutes || 0} دقيقة%0A` +
+                                `*التاريخ:* ${lessonData.date}%0A%0A` +
+                                `_تم الإرسال تلقائياً من نظام الأكاديمية الذكي_`;
                 
-                React.useEffect(() => {
-                    if (iconRef.current && name) {
-                        const iconData = typeof name === 'string' ? LucideIcons[name] : name;
-                        if (iconData) {
-                            // إنشاء الأيقونة برمجياً داخل العنصر
-                            const svg = lucide.createIcons({
-                                icons: { [name.name || 'icon']: iconData },
-                                attrs: { 
-                                    strokeWidth: 2,
-                                    width: size,
-                                    height: size,
-                                    class: className
+                const waUrl = `https://wa.me/${MANAGER_PHONE}?text=${message}`;
+                window.open(waUrl, '_blank');
+            };
+
+            const getStudentName = (id) => students.find(s => s.id === id)?.name || '...';
+            const getTeacherName = (id) => teachers.find(t => t.id === id)?.name || '...';
+
+            const analyzeReportWithAI = async () => {
+                setAiLoading(true); setAiResult('');
+                const name = reportFilters.personRole === 'teacher' ? getTeacherName(reportFilters.personId) : getStudentName(reportFilters.personId);
+                const filtered = lessons.filter(l => (reportFilters.personRole === 'teacher' ? l.teacherId === reportFilters.personId : l.studentId === reportFilters.personId));
+                
+                const prompt = `بناءً على سجل الحصص لـ ${name}:
+                ${filtered.map(l => `- مادة ${l.subject} لمدة ${l.hours} ساعة بتاريخ ${l.date}`).join('\n')}
+                قدم تحليلاً تربوياً ذكياً يشمل الأداء والتوصيات بصيغة محفزة واحترافية جداً.`;
+
+                try {
+                    const res = await callGeminiAI(prompt);
+                    setAiResult(res);
+                } catch (e) { showAlert('فشل تحليل الذكاء الاصطناعي', 'error'); }
+                finally { setAiLoading(false); }
+            };
+
+            if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#1a3a5f] text-white font-black text-2xl animate-pulse uppercase">Academy Engine Initializing...</div>;
+
+            if (!isLoggedIn) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-4 login-page-bg text-right font-black">
+                        <div className="login-page-overlay"></div>
+                        <div className="max-w-md w-full rounded-[2.5rem] p-8 login-card animate-fade-in shadow-2xl">
+                            {alert.show && <div className={`alert-toast px-6 py-3 rounded-2xl text-white font-black shadow-2xl ${alert.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`}>{alert.msg}</div>}
+                            <div className="text-center mb-10">
+                                <div className="inline-block p-2 bg-white rounded-full mb-4 border shadow-sm"><img src="شعار .jpeg" alt="Logo" className="w-32 h-32 object-contain" /></div>
+                                <h1 className="text-3xl font-black text-royal-blue tracking-tight uppercase">أكاديمية التفوق</h1>
+                                <p className="text-royal-gold text-[12px] font-black uppercase tracking-widest mt-1">Management Portal 2026</p>
+                            </div>
+                            <div className="flex bg-slate-100 p-2 rounded-2xl mb-8 border-2 font-black">
+                                <button onClick={() => setLoginRole('admin')} className={`flex-1 py-4 rounded-xl text-sm font-black transition-all ${loginRole === 'admin' ? 'bg-red-600 text-white shadow-lg scale-105' : 'text-slate-500'}`}>المدير العام</button>
+                                <button onClick={() => setLoginRole('teacher')} className={`flex-1 py-4 rounded-xl text-sm font-black transition-all ${loginRole === 'teacher' ? 'bg-[#1a3a5f] text-white shadow-lg scale-105' : 'text-slate-500'}`}>المعلم</button>
+                            </div>
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                                const u = loginForm.user.trim().toLowerCase();
+                                const p = loginForm.pass.trim();
+                                
+                                // حفظ البيانات إذا تم اختيار "تذكرني"
+                                if (loginForm.remember) {
+                                    localStorage.setItem('tafawuq_saved_creds', JSON.stringify({ user: u, pass: p }));
+                                } else {
+                                    localStorage.removeItem('tafawuq_saved_creds');
                                 }
-                            });
-                        }
-                    }
-                }, [name, size, className]);
 
-                return <span ref={iconRef} className={`inline-flex items-center justify-center ${className}`}></span>;
-            };
-
-            // تعريف الأيقونات المستخدمة بالأسماء
-            const ICONS = {
-                Users: 'Users',
-                BookOpen: 'BookOpen',
-                CheckCircle: 'CheckCircle',
-                Clock: 'Clock',
-                FileText: 'FileText',
-                LayoutDashboard: 'LayoutDashboard',
-                PlusCircle: 'PlusCircle',
-                Search: 'Search',
-                UserCheck: 'UserCheck',
-                AlertCircle: 'AlertCircle',
-                DollarSign: 'DollarSign',
-                Mail: 'Mail',
-                UserPlus: 'UserPlus',
-                LinkIcon: 'Link',
-                LogIn: 'LogIn',
-                LogOut: 'LogOut',
-                UserCircle: 'UserCircle',
-                GraduationCap: 'GraduationCap',
-                ShieldCheck: 'ShieldCheck',
-                BookMarked: 'BookMarked',
-                ChevronLeft: 'ChevronLeft',
-                Briefcase: 'Briefcase',
-                Key: 'Key',
-                Printer: 'Printer',
-                Star: 'Star',
-                Copy: 'Copy',
-                Check: 'Check',
-                Info: 'Info'
-            };
-
-            const App = () => {
-                const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-                const [currentUser, setCurrentUser] = React.useState(null);
-                const [loginRole, setLoginRole] = React.useState('admin'); 
-                const [loginForm, setLoginForm] = React.useState({ username: '', password: '' });
-                const [view, setView] = React.useState('dashboard');
-                const [loginError, setLoginError] = React.useState('');
-
-                const ADMIN_CREDENTIALS = { email: 'zakiabuillan@gmail.com', password: 'zenazaki@2026' };
-
-                const [teachers, setTeachers] = React.useState([
-                    { id: 't1', name: 'أ. محمد أحمد', hourlyRate: 50, username: 'teacher1', password: '123' },
-                    { id: 't2', name: 'أ. سارة محمود', hourlyRate: 60, username: 'teacher2', password: '123' },
-                ]);
-
-                const [students, setStudents] = React.useState([
-                    { id: 's1', name: 'ياسين كمال', regNo: 'TAF-2024-101' },
-                    { id: 's2', name: 'لينا عمر', regNo: 'TAF-2024-102' },
-                ]);
-
-                const [assignments, setAssignments] = React.useState([
-                    { studentId: 's1', teacherId: 't1' },
-                    { studentId: 's2', teacherId: 't1' },
-                ]);
-
-                const [lessons, setLessons] = React.useState([
-                    { id: 1, teacherId: 't1', studentId: 's1', subject: 'اللغة العربية', hours: 2, date: '2024-05-15', status: 'approved' },
-                ]);
-
-                const [reportFilters, setReportFilters] = React.useState({ studentId: '', startDate: '', endDate: '' });
-                const [newStudent, setNewStudent] = React.useState({ name: '' });
-                const [newTeacher, setNewTeacher] = React.useState({ name: '', rate: '', username: '', password: '' });
-                const [assignData, setAssignData] = React.useState({ studentId: '', teacherId: '' });
-                const [lessonEntry, setLessonEntry] = React.useState({ studentId: '', subject: '', hours: '', date: new Date().toISOString().split('T')[0] });
-
-                const handleLogin = (e) => {
-                    e.preventDefault();
-                    setLoginError('');
-                    if (loginRole === 'admin') {
-                        if (loginForm.username === ADMIN_CREDENTIALS.email && loginForm.password === ADMIN_CREDENTIALS.password) {
-                            setIsLoggedIn(true);
-                            setCurrentUser({ id: 'admin', name: 'زكي أبو علان', role: 'admin' });
-                        } else { setLoginError('بيانات دخول المدير غير صحيحة'); }
-                    } else {
-                        const teacher = teachers.find(t => t.username === loginForm.username && t.password === loginForm.password);
-                        if (teacher) {
-                            setIsLoggedIn(true);
-                            setCurrentUser({ ...teacher, role: 'teacher' });
-                        } else { setLoginError('اسم المستخدم أو كلمة المرور غير صحيحة'); }
-                    }
-                };
-
-                const handleLogout = () => {
-                    setIsLoggedIn(false);
-                    setCurrentUser(null);
-                    setLoginForm({ username: '', password: '' });
-                    setView('dashboard');
-                };
-
-                const filteredLessons = React.useMemo(() => {
-                    if (!currentUser) return [];
-                    return lessons.filter(l => {
-                        if (currentUser.role === 'teacher' && l.teacherId !== currentUser.id) return false;
-                        let match = true;
-                        if (reportFilters.studentId && l.studentId !== reportFilters.studentId) match = false;
-                        if (reportFilters.startDate && l.date < reportFilters.startDate) match = false;
-                        if (reportFilters.endDate && l.date > reportFilters.endDate) match = false;
-                        return match;
-                    });
-                }, [lessons, reportFilters, currentUser]);
-
-                const stats = React.useMemo(() => {
-                    const approved = lessons.filter(l => l.status === 'approved');
-                    const totalHours = approved.reduce((sum, l) => sum + l.hours, 0);
-                    const totalFinance = approved.reduce((sum, l) => {
-                        const t = teachers.find(teach => teach.id === l.teacherId);
-                        return sum + (l.hours * (t?.hourlyRate || 0));
-                    }, 0);
-                    return { totalHours, totalFinance, pending: lessons.filter(l => l.status === 'pending').length };
-                }, [lessons, teachers]);
-
-                const teacherStudentStats = React.useMemo(() => {
-                    if (!currentUser || currentUser.role !== 'teacher') return [];
-                    const myStudentsIds = assignments.filter(a => a.teacherId === currentUser.id).map(a => a.studentId);
-                    return myStudentsIds.map(sid => {
-                        const student = students.find(s => s.id === sid);
-                        const studentLessons = lessons.filter(l => l.studentId === sid && l.teacherId === currentUser.id && l.status === 'approved');
-                        const totalHours = studentLessons.reduce((sum, l) => sum + l.hours, 0);
-                        return { id: sid, name: student?.name, regNo: student?.regNo, totalHours, lessonCount: studentLessons.length };
-                    });
-                }, [currentUser, assignments, students, lessons]);
-
-                const Logo = ({ size = "md" }) => (
-                    <div className={`flex flex-col items-center ${size === 'lg' ? 'scale-110 mb-6' : 'scale-75'}`}>
-                        <div className="relative">
-                            <div className="bg-white p-3 rounded-full shadow-xl border-4 border-[#c5a044]">
-                                <Icon name={ICONS.BookOpen} size={size === 'lg' ? 48 : 32} className="text-[#1a3a5f]" />
-                            </div>
-                            <div className="absolute -top-2 -right-2 text-[#c5a044]">
-                                <Icon name={ICONS.Star} size={24} />
-                            </div>
-                        </div>
-                        <div className="mt-3 text-center">
-                            <h1 className={`font-black text-[#1a3a5f] leading-none ${size === 'lg' ? 'text-2xl' : 'text-lg'}`}>أكاديمية التفوق</h1>
-                            <div className="flex items-center justify-center gap-1 mt-1">
-                                <div className="h-[2px] w-4 bg-[#c5a044]"></div>
-                                <span className={`font-bold text-[#c5a044] uppercase tracking-widest ${size === 'lg' ? 'text-xs' : 'text-[10px]'}`}>أون لاين</span>
-                                <div className="h-[2px] w-4 bg-[#c5a044]"></div>
-                            </div>
+                                if (loginRole === 'admin' && u === 'zakiabuillan@gmail.com' && p === 'zenazaki@2026') {
+                                    setIsLoggedIn(true); setCurrentUserData({ id: 'admin', name: 'زكي أبو علان', role: 'admin' });
+                                } else {
+                                    const t = teachers.find(x => x.username.toLowerCase() === u && x.password === p);
+                                    if (t) { setIsLoggedIn(true); setCurrentUserData({ ...t, role: 'teacher' }); }
+                                    else showAlert('بيانات الدخول خطأ', 'error');
+                                }
+                            }} className="space-y-6">
+                                <div>
+                                    <label className="block text-xs font-black text-royal-blue pr-2 mb-1 uppercase">Username</label>
+                                    <input type="text" className="w-full p-4 rounded-2xl clear-input en-input font-black" placeholder="Username" value={loginForm.user} onChange={e => setLoginForm({...loginForm, user: e.target.value})} required />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-black text-royal-blue pr-2 mb-1 uppercase">Password</label>
+                                    <div className="relative">
+                                        <input type={showPassword ? "text" : "password"} className="w-full p-4 rounded-2xl clear-input en-input font-black" placeholder="Password" value={loginForm.pass} onChange={e => setLoginForm({...loginForm, pass: e.target.value})} required />
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-royal-blue transition-colors">
+                                            <Icon name={showPassword ? "EyeOff" : "Eye"} size={22}/>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 px-2">
+                                    <input type="checkbox" id="rem" className="w-5 h-5 accent-royal-blue" checked={loginForm.remember} onChange={e => setLoginForm({...loginForm, remember: e.target.checked})} />
+                                    <label htmlFor="rem" className="text-xs font-black text-slate-600 cursor-pointer">تذكر بيانات الدخول على هذا الجهاز</label>
+                                </div>
+                                <button className="w-full btn-gold py-5 rounded-2xl shadow-xl uppercase font-black tracking-widest text-xl flex items-center justify-center gap-3">دخول <Icon name="LogIn" size={24}/></button>
+                            </form>
                         </div>
                     </div>
                 );
+            }
 
-                if (!isLoggedIn) {
-                    return (
-                        <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center p-4">
-                            <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-8 border-b-[12px] border-[#c5a044] relative">
-                                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#1a3a5f] via-[#c5a044] to-[#1a3a5f]"></div>
-                                <Logo size="lg" />
-                                <div className="flex bg-slate-100 p-1 rounded-2xl mb-6">
-                                    <button onClick={() => setLoginRole('admin')} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${loginRole === 'admin' ? 'bg-[#1a3a5f] text-white shadow-lg' : 'text-slate-400'}`}>مدير المنصة</button>
-                                    <button onClick={() => setLoginRole('teacher')} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${loginRole === 'teacher' ? 'bg-[#1a3a5f] text-white shadow-lg' : 'text-slate-400'}`}>حساب المعلم</button>
+            return (
+                <div className="min-h-screen flex flex-row-reverse overflow-hidden font-bold text-right uppercase">
+                    {alert.show && <div className={`alert-toast px-8 py-4 rounded-3xl text-white font-black shadow-2xl flex items-center gap-3 border-b-4 ${alert.type === 'success' ? 'bg-emerald-600 border-emerald-800' : 'bg-red-600 border-red-800'}`}><Icon name="ShieldCheck" size={28} />{alert.msg}</div>}
+
+                    {/* مودال التأكيد مع ميزة الواتساب */}
+                    {confirmModal.show && (
+                        <div className="fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4 animate-fade-in">
+                            <div className="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl border-t-[10px] border-emerald-500 font-black">
+                                <Icon name="MessageSquare" size={60} className="text-emerald-500 mb-4 mx-auto" />
+                                <h3 className="text-2xl font-black text-royal-blue mb-4 uppercase font-black">تأكيد وإخطار المدير</h3>
+                                <p className="text-sm text-slate-500 mb-8 leading-relaxed font-black uppercase">
+                                    سيتم حفظ الحصة في السجلات وإرسال التفاصيل مباشرة إلى واتساب المدير للمراجعة الفورية.
+                                </p>
+                                <div className="flex flex-col gap-3">
+                                    <button disabled={isActionLoading} onClick={async () => { 
+                                        const res = await dbOp('lessons', confirmModal.data);
+                                        if(res) {
+                                            sendWhatsAppMessage(confirmModal.data);
+                                            showAlert('تم الحفظ وإرسال الإخطار');
+                                            setConfirmModal({show:false, data:null});
+                                            setView('dashboard');
+                                        }
+                                    }} className="btn-whatsapp py-4 rounded-2xl shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-3 font-black uppercase">
+                                        تأكيد وإرسال للمدير <Icon name="Send" size={20} />
+                                    </button>
+                                    <button onClick={() => setConfirmModal({show:false, data:null})} className="text-slate-400 font-black py-2 uppercase font-black">تراجع</button>
                                 </div>
-                                <form onSubmit={handleLogin} className="space-y-4">
-                                    {loginError && <div className="text-red-500 text-center text-xs font-bold bg-red-50 p-2 rounded-xl border border-red-100">{loginError}</div>}
-                                    <div className="relative">
-                                        <input type="text" className="w-full p-4 pr-12 bg-slate-50 border rounded-2xl outline-none focus:border-[#1a3a5f] font-bold" placeholder="اسم المستخدم أو البريد" value={loginForm.username} onChange={e => setLoginForm({...loginForm, username: e.target.value})} required />
-                                        <div className="absolute right-4 top-4 text-slate-300"><Icon name={ICONS.UserCircle} /></div>
-                                    </div>
-                                    <div className="relative">
-                                        <input type="password" className="w-full p-4 pr-12 bg-slate-50 border rounded-2xl outline-none focus:border-[#1a3a5f] font-bold" placeholder="كلمة المرور" value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})} required />
-                                        <div className="absolute right-4 top-4 text-slate-300"><Icon name={ICONS.Key} /></div>
-                                    </div>
-                                    <button className="w-full bg-[#1a3a5f] text-white py-4 rounded-2xl font-black shadow-lg hover:bg-[#0d223d] transition-all">دخول النظام</button>
-                                </form>
                             </div>
                         </div>
-                    );
-                }
+                    )}
 
-                return (
-                    <div className="min-h-screen flex flex-row-reverse overflow-hidden">
-                        {/* Sidebar */}
-                        <div className="w-72 bg-[#1a3a5f] text-white flex flex-col p-6 shadow-2xl shrink-0 z-30 no-print">
-                            <div className="mb-10 text-center border-b border-white/5 pb-6">
-                                <Logo size="sm" />
-                            </div>
-                            <nav className="flex-1 space-y-1">
-                                <button onClick={() => setView('dashboard')} className={`w-full text-right p-3.5 rounded-xl flex items-center gap-3 transition-all ${view === 'dashboard' ? 'bg-[#c5a044] text-white shadow-lg' : 'hover:bg-white/5 text-white/60'}`}><Icon name={ICONS.LayoutDashboard} size={18}/>الرئيسية</button>
-                                <button onClick={() => setView('reports')} className={`w-full text-right p-3.5 rounded-xl flex items-center gap-3 transition-all ${view === 'reports' ? 'bg-[#c5a044] text-white shadow-lg' : 'hover:bg-white/5 text-white/60'}`}><Icon name={ICONS.FileText} size={18}/>الكشوفات</button>
-                                {currentUser.role === 'admin' && (
-                                    <>
-                                        <div className="pt-4 pb-2 px-4 text-[10px] font-black text-white/20 uppercase tracking-widest">الإدارة</div>
-                                        <button onClick={() => setView('teachers')} className={`w-full text-right p-3.5 rounded-xl flex items-center gap-3 transition-all ${view === 'teachers' ? 'bg-[#c5a044] text-white shadow-lg' : 'hover:bg-white/5 text-white/60'}`}><Icon name={ICONS.Users} size={18}/>المعلمون</button>
-                                        <button onClick={() => setView('students')} className={`w-full text-right p-3.5 rounded-xl flex items-center gap-3 transition-all ${view === 'students' ? 'bg-[#c5a044] text-white shadow-lg' : 'hover:bg-white/5 text-white/60'}`}><Icon name={ICONS.GraduationCap} size={18}/>الطلاب</button>
-                                        <button onClick={() => setView('assign')} className={`w-full text-right p-3.5 rounded-xl flex items-center gap-3 transition-all ${view === 'assign' ? 'bg-[#c5a044] text-white shadow-lg' : 'hover:bg-white/5 text-white/60'}`}><Icon name={ICONS.LinkIcon} size={18}/>التنسيب</button>
-                                    </>
-                                )}
-                            </nav>
-                            <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-red-400 font-bold py-3 hover:text-red-300 transition-colors border-t border-white/5"><Icon name={ICONS.LogOut} size={18}/>خروج</button>
-                        </div>
-
-                        {/* Main Content */}
-                        <main className="flex-1 p-8 lg:p-12 overflow-y-auto bg-[#f8fafc]">
-                            <header className="flex justify-between items-center mb-10 no-print">
-                                <div>
-                                    <h2 className="text-3xl font-black text-slate-800 tracking-tight">
-                                        {view === 'dashboard' && 'لوحة التحكم المركزية'}
-                                        {view === 'reports' && 'استخراج كشوفات الحصص'}
-                                        {view === 'students' && 'سجل بيانات الطلاب'}
-                                        {view === 'teachers' && 'إدارة حسابات المعلمين'}
-                                        {view === 'assign' && 'تنسيب الطلاب للمواد'}
-                                        {view === 'add-student' && 'تسجيل طالب جديد'}
-                                        {view === 'add-lesson' && 'تسجيل حصة تعليمية'}
-                                    </h2>
-                                    <p className="text-slate-400 font-bold text-sm mt-1">أكاديمية التفوق أون لاين</p>
-                                </div>
-                                <button onClick={() => setView(currentUser.role === 'admin' ? 'add-student' : 'add-lesson')} className="bg-[#c5a044] text-[#1a3a5f] px-8 py-3 rounded-2xl font-black text-sm shadow-xl hover:bg-[#d4b055] transition-all flex items-center gap-2">
-                                    <Icon name={ICONS.PlusCircle} size={20} />
-                                    {currentUser.role === 'admin' ? 'إضافة طالب' : 'تسجيل حصة'}
-                                </button>
-                            </header>
-
-                            {view === 'dashboard' && (
-                                <div className="space-y-10 no-print">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 relative overflow-hidden group">
-                                            <div className="relative z-10">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">إجمالي الحصص</p>
-                                                <p className="text-4xl font-black text-[#1a3a5f]">{lessons.length}</p>
-                                            </div>
-                                            <div className="absolute right-[-10px] bottom-[-10px] text-slate-50 group-hover:text-blue-50 transition-colors"><Icon name={ICONS.BookMarked} size={100} /></div>
-                                        </div>
-                                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 relative overflow-hidden group">
-                                            <div className="relative z-10">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">بانتظار الاعتماد</p>
-                                                <p className="text-4xl font-black text-[#c5a044]">{stats.pending}</p>
-                                            </div>
-                                            <div className="absolute right-[-10px] bottom-[-10px] text-slate-50 group-hover:text-amber-50 transition-colors"><Icon name={ICONS.Clock} size={100} /></div>
-                                        </div>
-                                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 relative overflow-hidden group">
-                                            <div className="relative z-10">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">الميزانية المعتمدة</p>
-                                                <p className="text-4xl font-black text-emerald-600">{stats.totalFinance} ₪</p>
-                                            </div>
-                                            <div className="absolute right-[-10px] bottom-[-10px] text-slate-50 group-hover:text-emerald-50 transition-colors"><Icon name={ICONS.DollarSign} size={100} /></div>
-                                        </div>
-                                    </div>
-
-                                    {currentUser.role === 'teacher' && (
-                                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100">
-                                            <h3 className="font-black text-[#1a3a5f] mb-6 flex items-center gap-2"><Icon name={ICONS.Users} className="text-[#c5a044]"/> طلابك المنسوبين ومجاميع ساعاتهم</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                {teacherStudentStats.map(s => (
-                                                    <div key={s.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:shadow-md transition-all text-center">
-                                                        <p className="font-black text-slate-800 text-sm mb-1">{s.name}</p>
-                                                        <p className="text-[9px] font-bold text-[#c5a044] mb-4 tracking-widest">{s.regNo}</p>
-                                                        <p className="text-2xl font-black text-[#1a3a5f]">{s.totalHours} <span className="text-xs">ساعة</span></p>
-                                                    </div>
-                                                ))}
-                                                {teacherStudentStats.length === 0 && <p className="col-span-full text-center text-slate-400 py-10 italic">لا يوجد طلاب منسوبين لك حالياً</p>}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                    <aside className={`fixed md:relative right-0 top-0 h-screen w-72 flex flex-col p-6 shadow-2xl z-50 sidebar-transition ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'} no-print`}>
+                        <div className="mb-10 text-center border-b border-white/10 pb-6"><Icon name="GraduationCap" size={50} className="icon-gold mb-2" /><h2 className="font-black text-lg text-white font-black">أكاديمية التفوق</h2></div>
+                        <nav className="flex-1 space-y-2 overflow-y-auto font-black uppercase">
+                            <NavItem icon="LayoutDashboard" label="الرئيسية" active={view === 'dashboard'} onClick={() => {setView('dashboard'); setSidebarOpen(false);}} />
+                            {currentUserData.role === 'admin' && (
+                                <>
+                                    <div className="pt-4 pb-2 px-4 text-[9px] font-black text-white/30 uppercase tracking-[0.2em] font-black">إدارة المنصة</div>
+                                    <NavItem icon="UserPlus" label="إدارة المعلمين" active={view === 'mgmt-teachers'} onClick={() => {setView('mgmt-teachers'); setSidebarOpen(false);}} highlight={true} />
+                                    <NavItem icon="PlusCircle" label="إضافة طلاب" active={view === 'mgmt-students'} onClick={() => {setView('mgmt-students'); setSidebarOpen(false);}} highlight={true} />
+                                    <NavItem icon="Link" label="تنسيب الطلاب" active={view === 'assign'} onClick={() => {setView('assign'); setSidebarOpen(false);}} highlight={true} />
+                                </>
                             )}
+                            {currentUserData.role === 'teacher' && (
+                                <>
+                                    <div className="pt-4 pb-2 px-4 text-[9px] font-black text-white/30 uppercase tracking-[0.2em] font-black">العمليات</div>
+                                    <NavItem icon="PlusSquare" label="تسجيل حصة جديدة" active={view === 'add-lesson'} onClick={() => {setView('add-lesson'); setSidebarOpen(false);}} highlight={true} />
+                                </>
+                            )}
+                            <NavItem icon="FileText" label="سجل الحصص" active={view === 'reports'} onClick={() => {setView('reports'); setSidebarOpen(false);}} />
+                        </nav>
+                        <button onClick={() => setIsLoggedIn(false)} className="mt-auto flex items-center justify-center gap-3 text-red-400 p-4 hover:bg-red-500/10 rounded-2xl transition-all font-black uppercase font-black"><Icon name="LogOut" size={24} /> خروج</button>
+                    </aside>
 
-                            {view === 'reports' && (
-                                <div className="space-y-6">
-                                    <div className="bg-white p-6 rounded-[1.5rem] shadow-lg border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-4 no-print">
-                                        <select className="p-3 bg-slate-50 border rounded-xl font-bold text-xs outline-none" value={reportFilters.studentId} onChange={e => setReportFilters({...reportFilters, studentId: e.target.value})}>
-                                            <option value="">جميع الطلاب</option>
-                                            {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                        </select>
-                                        <input type="date" className="p-3 bg-slate-50 border rounded-xl font-bold text-xs outline-none" value={reportFilters.startDate} onChange={e => setReportFilters({...reportFilters, startDate: e.target.value})} />
-                                        <input type="date" className="p-3 bg-slate-50 border rounded-xl font-bold text-xs outline-none" value={reportFilters.endDate} onChange={e => setReportFilters({...reportFilters, endDate: e.target.value})} />
-                                    </div>
-                                    <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-slate-100 print-area">
-                                        <div className="p-6 bg-[#1a3a5f] text-white flex justify-between items-center">
-                                            <h3 className="font-black flex items-center gap-2"><Icon name={ICONS.FileText} size={18} className="text-[#c5a044]"/> كشف الحصص الدراسي</h3>
-                                            <button onClick={() => window.print()} className="bg-[#c5a044] text-[#1a3a5f] px-5 py-2 rounded-xl font-black text-xs flex items-center gap-2 hover:bg-white transition-all no-print"><Icon name={ICONS.Printer} size={14}/> طباعة</button>
+                    <main className="flex-1 p-4 md:p-12 overflow-y-auto custom-scrollbar relative font-black text-right uppercase font-black">
+                        <header className="flex justify-between items-center mb-10 no-print font-black uppercase">
+                            <div className="flex items-center gap-4 uppercase font-black font-black"><button onClick={() => setSidebarOpen(true)} className="p-2 bg-royal-blue text-white rounded-xl md:hidden shadow-lg font-black uppercase"><Icon name="Menu" size={24}/></button><h2 className="text-xl md:text-3xl font-black text-slate-800 uppercase tracking-tighter uppercase font-black font-black">{view}</h2></div>
+                        </header>
+                        
+                        {view === 'dashboard' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 font-black animate-fade-in uppercase font-black">
+                                <StatCard icon="Users" label="إجمالي الطلاب" value={students.length} color="#c5a044" />
+                                <StatCard icon="Clock" label="إجمالي الساعات" value={lessons.reduce((s,l)=>s+(parseFloat(l.hours||0)),0).toFixed(1)} color="#1a3a5f" />
+                            </div>
+                        )}
+
+                        {view === 'mgmt-teachers' && (
+                            <div className="space-y-12 animate-fade-in font-black uppercase font-black">
+                                <div className={`bg-white p-10 rounded-[2.5rem] shadow-xl border-t-[10px] ${editingTeacher ? 'border-emerald-500' : 'border-royal-blue'}`}>
+                                    <h3 className="text-2xl font-black text-royal-blue mb-8 flex items-center justify-center gap-4 font-black">
+                                        <Icon name={editingTeacher ? "Edit" : "UserPlus"} className="icon-gold font-black" size={40} /> 
+                                        {editingTeacher ? 'تعديل بيانات حساب معلم' : 'إنشاء حساب معلم جديد'}
+                                    </h3>
+                                    <form className="space-y-5 font-black" onSubmit={handleTeacherSubmit}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-black">
+                                            <input name="name" defaultValue={editingTeacher?.name || ''} key={editingTeacher?.id + 'name'} placeholder="الاسم الرباعي للمعلم" className="w-full p-4 border rounded-2xl clear-input font-black uppercase font-black" required />
+                                            <input name="specialty" defaultValue={editingTeacher?.specialty || ''} key={editingTeacher?.id + 'spec'} placeholder="التخصص" className="w-full p-4 border rounded-2xl clear-input font-black uppercase font-black" required />
                                         </div>
-                                        <table className="w-full text-right text-xs">
-                                            <thead className="bg-slate-50 text-slate-400 font-black uppercase border-b">
-                                                <tr>
-                                                    <th className="p-5">التاريخ</th>
-                                                    <th className="p-5">المادة</th>
-                                                    <th className="p-5">الطالب</th>
-                                                    <th className="p-5 text-center">المدة</th>
-                                                    <th className="p-5">الحالة</th>
+                                        <input name="rate" type="number" defaultValue={editingTeacher?.hourlyRate || ''} key={editingTeacher?.id + 'rate'} placeholder="سعر الساعة (₪)" className="w-full p-4 border rounded-2xl clear-input font-black uppercase font-black" required />
+                                        <div className="grid grid-cols-2 gap-6 font-black">
+                                            <input name="user" defaultValue={editingTeacher?.username || ''} key={editingTeacher?.id + 'user'} placeholder="Username (EN)" className="w-full p-4 border rounded-2xl clear-input en-input font-black uppercase font-black" required />
+                                            <input name="pass" defaultValue={editingTeacher?.password || ''} key={editingTeacher?.id + 'pass'} placeholder="Password" className="w-full p-4 border rounded-2xl clear-input en-input font-black uppercase font-black" required />
+                                        </div>
+                                        <div className="flex gap-4 pt-4 font-black">
+                                            <button className={`flex-1 py-5 rounded-2xl font-black text-xl shadow-lg transition-all ${editingTeacher ? 'btn-update' : 'btn-dark-blue text-white hover:bg-slate-800'}`}>
+                                                {editingTeacher ? 'تحديث البيانات الآن' : 'تفعيل حساب المعلم'}
+                                            </button>
+                                            {editingTeacher && (
+                                                <button type="button" onClick={() => setEditingTeacher(null)} className="px-8 bg-slate-200 text-slate-600 rounded-2xl font-black font-black">إلغاء</button>
+                                            )}
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <div className="bg-white rounded-3xl shadow-2xl border overflow-hidden font-black">
+                                    <div className="p-6 bg-slate-100 border-b flex justify-between items-center font-black font-black">
+                                        <span className="text-royal-blue text-xl font-black uppercase font-black">المعلمون المضافون وتفاصيل الحسابات</span>
+                                        <span className="text-xs text-slate-400 font-black">(اضغط لتعديل المعلم)</span>
+                                    </div>
+                                    <div className="table-container font-black">
+                                        <table className="w-full text-right text-sm font-black font-black uppercase">
+                                            <thead>
+                                                <tr className="bg-slate-50 border-b text-slate-500 uppercase text-[11px] tracking-widest font-black font-black uppercase font-black">
+                                                    <th className="p-5 font-black uppercase">اسم المعلم</th>
+                                                    <th className="p-5 font-black uppercase">التخصص</th>
+                                                    <th className="p-5 font-black uppercase">Username</th>
+                                                    <th className="p-5 font-black uppercase">Password</th>
+                                                    <th className="p-5 text-center font-black uppercase font-black">سعر الساعة</th>
+                                                    <th className="p-5 text-center font-black uppercase font-black">حذف</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-50">
-                                                {filteredLessons.map(l => (
-                                                    <tr key={l.id} className="hover:bg-slate-50 transition-colors">
-                                                        <td className="p-5 font-bold text-slate-500">{l.date}</td>
-                                                        <td className="p-5 text-[#c5a044] font-black">{l.subject}</td>
-                                                        <td className="p-5 font-black text-slate-800">{students.find(s=>s.id===l.studentId)?.name}</td>
-                                                        <td className="p-5 text-center font-black text-[#1a3a5f]">{l.hours} س</td>
-                                                        <td className="p-5">
-                                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${l.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{l.status === 'approved' ? 'معتمدة' : 'مراجعة'}</span>
+                                            <tbody className="font-black uppercase">
+                                                {teachers.map(t => (
+                                                    <tr key={t.id} onClick={() => { setEditingTeacher(t); window.scrollTo({top:0, behavior:'smooth'}); }} className="border-b last:border-0 teacher-row font-black font-black">
+                                                        <td className="p-5 text-royal-blue text-lg font-black">{t.name}</td>
+                                                        <td className="p-5 font-black text-slate-800 font-black">{t.specialty}</td>
+                                                        <td className="p-5 en-input text-slate-500 font-black">{t.username}</td>
+                                                        <td className="p-5 en-input text-slate-500 font-bold tracking-widest font-black">{t.password}</td>
+                                                        <td className="p-5 text-center text-emerald-600 font-black">₪{t.hourlyRate}</td>
+                                                        <td className="p-5 text-center font-black">
+                                                            <button onClick={(e) => { e.stopPropagation(); if(confirm('حذف المعلم؟')) dbOp('teachers', null, t.id); }} className="text-red-400 hover:text-red-600 font-black"><Icon name="Trash2" size={24}/></button>
                                                         </td>
                                                     </tr>
                                                 ))}
-                                                {filteredLessons.length === 0 && <tr><td colSpan="5" className="p-20 text-center text-slate-300 font-bold italic">لا توجد سجلات تطابق البحث</td></tr>}
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
-                            )}
+                            </div>
+                        )}
 
-                            {view === 'add-student' && (
-                                <div className="max-w-xl mx-auto bg-white p-12 rounded-[2.5rem] shadow-2xl border-t-[10px] border-[#c5a044] no-print">
-                                    <h3 className="text-2xl font-black text-[#1a3a5f] mb-8 text-center">تسجيل طالب جديد</h3>
-                                    <form onSubmit={(e) => { e.preventDefault(); const s={id:`s${Date.now()}`, name:newStudent.name, regNo: 'TAF-'+Math.floor(Math.random()*10000)}; setStudents([...students, s]); setNewStudent({name:''}); setView('students'); }} className="space-y-6">
-                                        <div className="space-y-1">
-                                            <label className="block text-[10px] font-black text-slate-400 mr-4 uppercase">اسم الطالب الرباعي</label>
-                                            <input type="text" className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-[#1a3a5f] font-black text-lg transition-all" placeholder="ادخل الاسم هنا..." value={newStudent.name} onChange={e => setNewStudent({ name: e.target.value })} required />
-                                        </div>
-                                        <button className="w-full bg-[#1a3a5f] text-white py-5 rounded-[1.5rem] font-black text-xl shadow-2xl hover:bg-[#0d223d] transition-all transform active:scale-95">تأكيد التسجيل</button>
+                        {view === 'mgmt-students' && (
+                            <div className="max-w-2xl mx-auto space-y-12 animate-fade-in font-black uppercase font-black">
+                                <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border-t-[10px] border-royal-gold font-black">
+                                    <h3 className="text-2xl font-black text-royal-blue mb-8 flex items-center justify-center gap-3 uppercase font-black font-black font-black uppercase font-black"><Icon name="PlusCircle" className="icon-blue font-black uppercase" size={32} /> تسجيل طالب جديد</h3>
+                                    <form className="space-y-4 font-black font-black uppercase font-black" onSubmit={async (e) => { 
+                                        e.preventDefault(); const f=e.target; 
+                                        const res = await dbOp('students', {name:f.name.value.trim(), regNo:'TAF-'+Math.floor(1000+Math.random()*9000)}); 
+                                        if(res) { f.reset(); showAlert('تم تسجيل الطالب بنجاح'); }
+                                    }}>
+                                        <input name="name" placeholder="اسم الطالب الرباعي" className="w-full p-4 border rounded-2xl clear-input text-center text-xl font-black uppercase font-black uppercase font-black" required />
+                                        <button disabled={isActionLoading} className="w-full btn-gold py-5 rounded-2xl shadow-lg uppercase text-xl font-black font-black uppercase font-black">حفظ في السحابة</button>
                                     </form>
                                 </div>
-                            )}
-                            
-                            {view === 'add-lesson' && (
-                                <div className="max-w-xl mx-auto bg-white p-12 rounded-[2.5rem] shadow-2xl border-t-[10px] border-[#c5a044] no-print">
-                                    <h3 className="text-2xl font-black text-[#1a3a5f] mb-8 text-center">تسجيل حصة دراسية جديدة</h3>
-                                    <form onSubmit={(e) => { e.preventDefault(); const l={id:Date.now(), teacherId:currentUser.id, ...lessonEntry, hours:parseFloat(lessonEntry.hours), status:'pending'}; setLessons([l,...lessons]); setView('dashboard'); }} className="space-y-6">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1">
-                                                <label className="block text-[10px] font-black text-slate-400 mr-4 uppercase">الطالب</label>
-                                                <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={lessonEntry.studentId} onChange={e=>setLessonEntry({...lessonEntry, studentId:e.target.value})} required>
-                                                    <option value="">-- اختر الطالب --</option>
-                                                    {assignments.filter(a=>a.teacherId===currentUser?.id).map(a=>{const s=students.find(st=>st.id===a.studentId); return <option key={a.studentId} value={a.studentId}>{s?.name}</option>;})}
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="block text-[10px] font-black text-slate-400 mr-4 uppercase">المادة</label>
-                                                <input type="text" placeholder="مثل: التاريخ" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold" value={lessonEntry.subject} onChange={e => setLessonEntry({...lessonEntry, subject: e.target.value})} required />
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1">
-                                                <label className="block text-[10px] font-black text-slate-400 mr-4 uppercase">المدة بالساعات</label>
-                                                <input type="number" step="0.5" className="w-full p-4 bg-slate-50 border rounded-2xl font-black text-center text-xl" value={lessonEntry.hours} onChange={e => setLessonEntry({...lessonEntry, hours: e.target.value})} required />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="block text-[10px] font-black text-slate-400 mr-4 uppercase">التاريخ</label>
-                                                <input type="date" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold" value={lessonEntry.date} onChange={e => setLessonEntry({...lessonEntry, date: e.target.value})} required />
-                                            </div>
-                                        </div>
-                                        <button className="w-full bg-[#1a3a5f] text-white py-5 rounded-[1.5rem] font-black text-xl shadow-2xl hover:bg-[#0d223d] transition-all active:scale-95">حفظ وإرسال للمراجعة</button>
-                                    </form>
-                                </div>
-                            )}
-
-                            {view === 'students' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 no-print">
-                                    {students.map(s => (
-                                        <div key={s.id} className="bg-white p-6 rounded-2xl border shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
-                                            <div className="absolute top-0 right-0 w-1 h-full bg-[#c5a044]"></div>
-                                            <div className="flex justify-between items-start mb-2">
-                                                <p className="font-black text-[#1a3a5f]">{s.name}</p>
-                                                <Icon name={ICONS.UserCircle} className="text-slate-100 group-hover:text-slate-200 transition-colors" size={32} />
-                                            </div>
-                                            <p className="text-[10px] font-bold text-[#c5a044] tracking-widest uppercase">{s.regNo}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {view === 'teachers' && (
-                                <div className="space-y-8 no-print">
-                                    <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100">
-                                        <h3 className="font-black text-[#1a3a5f] mb-6 flex items-center gap-2"><Icon name={ICONS.UserPlus} className="text-[#c5a044]"/> إنشاء حساب معلم جديد</h3>
-                                        <form onSubmit={(e) => { e.preventDefault(); const t={id:`t${Date.now()}`, ...newTeacher, hourlyRate:parseFloat(newTeacher.rate)}; setTeachers([...teachers, t]); setNewTeacher({name:'',rate:'',username:'',password:''}); setView('dashboard'); }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <input type="text" placeholder="اسم المعلم" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" value={newTeacher.name} onChange={e=>setNewTeacher({...newTeacher, name:e.target.value})} required />
-                                            <input type="number" placeholder="سعر الساعة (₪)" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" value={newTeacher.rate} onChange={e=>setNewTeacher({...newTeacher, rate:e.target.value})} required />
-                                            <input type="text" placeholder="اسم المستخدم" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" value={newTeacher.username} onChange={e=>setNewTeacher({...newTeacher, username:e.target.value})} required />
-                                            <input type="password" placeholder="كلمة المرور" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" value={newTeacher.password} onChange={e=>setNewTeacher({...newTeacher, password:e.target.value})} required />
-                                            <button className="md:col-span-2 bg-[#1a3a5f] text-white py-4 rounded-xl font-black shadow-lg">إضافة المعلم للنظام</button>
-                                        </form>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {teachers.map(t=>(<div key={t.id} className="bg-white p-4 rounded-xl border flex justify-between items-center"><span className="font-black text-slate-800">{t.name}</span><span className="text-[10px] font-bold text-[#c5a044]">{t.hourlyRate} ₪/س</span></div>))}
+                                <div className="bg-white rounded-3xl shadow-xl border overflow-hidden font-black">
+                                    <div className="p-6 bg-slate-100 border-b flex justify-between items-center font-black uppercase font-black font-black uppercase font-black"><span className="text-royal-blue uppercase font-black uppercase font-black">قائمة الطلاب المسجلين</span><Icon name="UserCheck" className="text-royal-gold font-black uppercase font-black" size={35} /></div>
+                                    <div className="table-container font-black">
+                                        <table className="w-full text-right text-sm font-black font-black uppercase font-black">
+                                            <thead><tr className="bg-slate-50 font-black border-b font-black font-black uppercase font-black"><th className="p-4 font-black uppercase font-black">اسم الطالب</th><th className="p-4 text-center font-black uppercase font-black uppercase font-black">إجراء</th></tr></thead>
+                                            <tbody className="font-bold uppercase font-black uppercase font-black font-black uppercase font-black">
+                                                {students.map(s => (
+                                                    <tr key={s.id} className="border-b last:border-0 hover:bg-slate-50 uppercase font-black font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black"><td className="p-4 text-royal-blue font-black font-black uppercase font-black font-black">{s.name}</td><td className="p-4 text-center uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black"><button onClick={() => dbOp('students', null, s.id)} className="text-red-400 font-black uppercase font-black"><Icon name="Trash2" size={24}/></button></td></tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
-                            )}
+                            </div>
+                        )}
 
-                            {view === 'assign' && (
-                                <div className="max-w-xl mx-auto bg-white p-12 rounded-[2.5rem] shadow-xl border-t-[10px] border-[#c5a044] no-print">
-                                    <h3 className="text-2xl font-black text-[#1a3a5f] mb-8 text-center flex items-center justify-center gap-3"><Icon name={ICONS.LinkIcon} size={30} className="text-[#c5a044]"/> تنسيب الطلاب للمواد</h3>
-                                    <form onSubmit={(e) => { e.preventDefault(); setAssignments([...assignments, assignData]); setAssignData({studentId:'', teacherId:''}); setView('dashboard'); }} className="space-y-6">
-                                        <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={assignData.studentId} onChange={e => setAssignData({...assignData, studentId: e.target.value})} required>
-                                            <option value="">-- اختر الطالب --</option>
-                                            {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                        </select>
-                                        <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={assignData.teacherId} onChange={e => setAssignData({...assignData, teacherId: e.target.value})} required>
-                                            <option value="">-- اختر المعلم المختص --</option>
-                                            {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                        </select>
-                                        <button className="w-full bg-[#1a3a5f] text-white py-4 rounded-2xl font-black shadow-xl">إتمام التنسيب</button>
-                                    </form>
+                        {view === 'assign' && (
+                            <div className="max-w-2xl mx-auto bg-white p-10 rounded-[2.5rem] shadow-2xl border-t-[12px] border-royal-blue relative overflow-hidden font-black font-black uppercase font-black">
+                                <div className="absolute top-0 left-0 w-2 h-full royal-gold opacity-50 shadow-inner font-black uppercase font-black font-black uppercase font-black"></div>
+                                <h3 className="text-2xl font-black text-royal-blue text-center mb-8 uppercase flex items-center justify-center gap-3 font-black font-black uppercase font-black"><Icon name="Link" className="icon-gold uppercase font-black font-black uppercase font-black" size={40}/> تأكيد التنسيب والربط</h3>
+                                <form className="space-y-6 font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black" onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    const tId = e.target.elements.teacherId.value; 
+                                    const sId = e.target.elements.studentId.value;
+                                    const res = await dbOp('assignments', { teacherId: tId, studentId: sId, createdAt: new Date().toISOString() });
+                                    if(res) showAlert('تمت عملية الربط بنجاح');
+                                }}>
+                                    <div className="space-y-2 font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black"><label className="text-sm font-black text-royal-blue pr-2 block font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black uppercase">المعلم المسؤول</label>
+                                        <select name="teacherId" className="w-full p-5 bg-white border-2 border-slate-200 rounded-2xl font-black shadow-inner en-input uppercase font-black font-black uppercase font-black uppercase font-black uppercase font-black" required><option value="">-- اختر من القائمة --</option>{teachers.map(t=><option key={t.id} value={t.id}>{t.name} ({t.specialty})</option>)}</select>
+                                    </div>
+                                    <div className="space-y-2 font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black"><label className="text-sm font-black text-royal-blue pr-2 block font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black uppercase">الطالب المنسوب</label>
+                                        <select name="studentId" className="w-full p-5 bg-white border-2 border-slate-200 rounded-2xl font-black shadow-inner en-input font-black uppercase font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black" required><option value="">-- اختر من القائمة --</option>{students.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
+                                    </div>
+                                    <button disabled={isActionLoading} type="submit" className="w-full btn-gold py-5 rounded-2xl shadow-xl transition-all active:scale-95 text-xl flex items-center justify-center gap-3 border-b-4 border-gold-700 font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black font-black uppercase font-black uppercase">تأكيد الربط <Icon name="CheckCircle" size={24} /></button>
+                                </form>
+                            </div>
+                        )}
+
+                        {view === 'add-lesson' && currentUserData.role === 'teacher' && (
+                            <div className="max-w-2xl mx-auto bg-white p-10 rounded-[2.5rem] shadow-2xl border-t-[10px] border-royal-gold animate-fade-in no-print text-right font-black uppercase font-black font-black uppercase font-black uppercase font-black">
+                                <h3 className="text-2xl font-black text-royal-blue text-center mb-8 uppercase tracking-widest font-black font-black font-black uppercase font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black"><Icon name="PlusSquare" className="icon-gold ml-2 font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black" size={30}/> تسجيل حصة تعليمية جديدة</h3>
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault(); const fd = new FormData(e.target);
+                                    const data = { 
+                                        studentId: fd.get('studentId'), 
+                                        subject: fd.get('subject'), 
+                                        hours: fd.get('hours'), 
+                                        minutes: fd.get('minutes'), 
+                                        date: fd.get('date'), 
+                                        teacherId: currentUserData.id 
+                                    };
+                                    setConfirmModal({ show: true, data });
+                                }} className="space-y-6 font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black font-black">
+                                    <div className="space-y-4 font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black uppercase font-black uppercase">
+                                        <div><label className="text-[11px] text-slate-400 block mb-1 uppercase tracking-widest font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black">اختر الطالب من طلابك المنسوبين</label><select name="studentId" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-sm uppercase shadow-inner en-input uppercase font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black uppercase font-black uppercase font-black" required><option value="">-- اختر الطالب --</option>{assignments.filter(a => a.teacherId === currentUserData.id).map(a => <option key={a.studentId} value={a.studentId}>{getStudentName(a.studentId)}</option>)}</select></div>
+                                        <div><label className="text-[11px] text-slate-400 block mb-1 uppercase tracking-widest font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black font-black">المادة التعليمية</label><input name="subject" type="text" className="w-full p-4 bg-white border-2 border-slate-200 rounded-2xl font-black text-sm text-right uppercase font-black font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black" placeholder="..." required /></div>
+                                        <div className="grid grid-cols-2 gap-4 uppercase font-black font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black font-black font-black uppercase font-black"><div className="text-center font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black font-black uppercase font-black font-black uppercase font-black font-black font-black font-black"><label className="text-[11px] text-slate-400 block mb-1 uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black">ساعات</label><input name="hours" type="number" min="0" className="w-full p-4 bg-white border-2 border-slate-200 rounded-2xl text-center text-2xl font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black" defaultValue="0" required /></div><div className="text-center font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black font-black font-black"><label className="text-[11px] text-slate-400 block mb-1 uppercase font-black font-black font-black font-black font-black font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black">دقائق</label><input name="minutes" type="number" min="0" max="59" className="w-full p-4 bg-white border-2 border-slate-200 rounded-2xl text-center text-2xl font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black" defaultValue="0" required /></div></div>
+                                        <div><label className="text-[11px] text-slate-400 block mb-1 text-right font-black uppercase font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black">تاريخ الحصة</label><input name="date" type="date" className="w-full p-4 bg-white border-2 border-slate-200 rounded-2xl font-black text-center font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black" defaultValue={new Date().toISOString().split('T')[0]} required /></div>
+                                    </div>
+                                    <button disabled={isActionLoading} type="submit" className="w-full bg-royal-blue text-white py-5 rounded-2xl font-black md:text-xl shadow-xl hover:bg-slate-800 transition-all uppercase tracking-widest uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black uppercase font-black">إرسال وإخطار المدير <Icon name="Whatsapp" size={32} className="icon-gold mr-2 font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black font-black font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black" /></button>
+                                </form>
+                            </div>
+                        )}
+
+                        {/* سجل الحصص العام */}
+                        {view === 'reports' && (
+                             <div className="bg-white rounded-3xl shadow-xl overflow-hidden border animate-fade-in font-black uppercase text-black text-right uppercase font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black font-black font-black">
+                                <div className="p-6 bg-royal-blue text-white flex justify-between items-center font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black"><h3 className="text-xl font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black font-black font-black font-black">سجل الحصص العام</h3><button onClick={() => window.print()} className="btn-gold px-6 py-2 rounded-xl text-xs flex items-center gap-2 font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black"><Icon name="Printer" size={24}/></button></div>
+                                <div className="table-container custom-scrollbar font-black uppercase text-black text-right font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black uppercase font-black font-black font-black font-black">
+                                    <table className="w-full text-right text-sm font-black uppercase font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black">
+                                        <thead className="bg-slate-50 border-b text-slate-400 text-[10px] tracking-widest font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black"><tr><th className="p-4 text-right font-black uppercase font-black uppercase font-black font-black font-black font-black font-black uppercase font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black">التاريخ</th><th className="p-4 text-right font-black uppercase font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black">المعلم</th><th className="p-4 text-right font-black uppercase font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black">الطالب</th><th className="p-4 text-center font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black uppercase font-black font-black font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black">المدة</th></tr></thead>
+                                        <tbody className="font-bold font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black">
+                                            {lessons.sort((a,b)=>b.date.localeCompare(a.date)).map(l=>(
+                                                <tr key={l.id} className="border-b last:border-0 hover:bg-slate-50 uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black"><td className="p-4 text-slate-500 font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black">{l.date}</td><td className="p-4 font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black">{getTeacherName(l.teacherId)}</td><td className="p-4 font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black uppercase font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black font-black font-black uppercase font-black font-black font-black uppercase font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black">{getStudentName(l.studentId)}</td><td className="p-4 text-center text-royal-blue font-black tracking-tighter font-black font-black font-black uppercase font-black font-black font-black font-black font-black font-black uppercase font-black font-black uppercase font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black uppercase font-black font-black font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black uppercase font-black font-black uppercase font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black font-black">{l.hours}س {l.minutes}د</td></tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            )}
-                        </main>
-                    </div>
-                );
-            };
+                             </div>
+                        )}
 
-            const container = document.getElementById('root');
-            const root = ReactDOM.createRoot(container);
-            root.render(<App />);
-        })();
+                    </main>
+                </div>
+            );
+        };
+
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
     </script>
 </body>
 </html>
