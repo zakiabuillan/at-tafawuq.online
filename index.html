@@ -5,25 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>أكاديمية التفوق - النظام المحاسبي الشامل</title>
     
-    <!-- استدعاء المكتبات الأساسية -->
+    <!-- استدعاء المكتبات البرمجية الجاهزة لتشغيل الواجهات والأيقونات -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
+    <!-- خطوط عربية جميلة وواضحة -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     
     <style>
+        /* تعريف الألوان الأساسية للمنصة لسهولة تغييرها لاحقاً */
         :root { --primary: #1a3a5f; --gold: #c5a044; --bg: #f8fafc; }
         body { font-family: 'Cairo', sans-serif; background-color: var(--bg); color: #1e293b; margin: 0; }
         
+        /* تصميم حقول الإدخال لتكون جذابة */
         .clear-input { border: 2px solid #e2e8f0; border-radius: 1rem; padding: 1rem; outline: none; transition: all 0.3s; }
         .clear-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26, 58, 95, 0.1); }
         
+        /* تصميم الأزرار الرئيسية */
         .btn-main { background-color: var(--primary); color: white; font-weight: 900; transition: all 0.3s; }
         .btn-main:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         
+        /* حركات الظهور السلسة للواجهات */
         .animate-fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -34,7 +39,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // مكون رسم الأيقونات
+        // مكون برمجي صغير لرسم الأيقونات
         const Icon = ({ name, size = 24, className = "" }) => {
             const iconRef = useRef(null);
             useEffect(() => {
@@ -44,61 +49,67 @@
         };
 
         const App = () => {
-            // حالة التطبيق وتسجيل الدخول
+            // حالة التطبيق: هل المستخدم مسجل دخول؟ وما هي الشاشة المفتوحة؟
             const [isLoggedIn, setIsLoggedIn] = useState(false);
             const [view, setView] = useState('dashboard');
             const [currentUser, setCurrentUser] = useState(null);
             
-            // قواعد البيانات المحفوظة في المتصفح
+            // قواعد البيانات: نقوم بجلب البيانات من ذاكرة المتصفح إذا كانت موجودة، أو ننشئ قوائم فارغة
             const [teachers, setTeachers] = useState(() => JSON.parse(localStorage.getItem('taf_teachers')) || []);
             const [students, setStudents] = useState(() => JSON.parse(localStorage.getItem('taf_students')) || []);
             const [assignments, setAssignments] = useState(() => JSON.parse(localStorage.getItem('taf_assignments')) || []);
             const [lessons, setLessons] = useState(() => JSON.parse(localStorage.getItem('taf_lessons')) || []);
 
+            // أمر برمجي لحفظ البيانات تلقائياً في المتصفح عند أي تغيير
             useEffect(() => { localStorage.setItem('taf_teachers', JSON.stringify(teachers)); }, [teachers]);
             useEffect(() => { localStorage.setItem('taf_students', JSON.stringify(students)); }, [students]);
             useEffect(() => { localStorage.setItem('taf_assignments', JSON.stringify(assignments)); }, [assignments]);
             useEffect(() => { localStorage.setItem('taf_lessons', JSON.stringify(lessons)); }, [lessons]);
 
-            // حالات التعديل
+            // حالات حفظ العنصر المراد تعديله
             const [editingTeacher, setEditingTeacher] = useState(null);
             const [editingStudent, setEditingStudent] = useState(null);
             const [editingAssignment, setEditingAssignment] = useState(null);
 
-            // بيانات الدخول
+            // بيانات نافذة تسجيل الدخول
             const [loginUser, setLoginUser] = useState(() => localStorage.getItem('saved_taf_user') || '');
             const [loginPass, setLoginPass] = useState(() => localStorage.getItem('saved_taf_pass') || '');
             const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem('saved_taf_user'));
             const [showPassword, setShowPassword] = useState(false);
 
-            // ================== دالة تسجيل الدخول (تم الإصلاح هنا) ==================
+            // ================== دالة تسجيل الدخول (معقل الصلاحيات) ==================
             const handleLogin = (e) => {
-                e.preventDefault();
-                // تنظيف المدخلات من المسافات وتحويلها لأحرف صغيرة
+                e.preventDefault(); // منع إعادة تحميل الصفحة
+                
+                // تنظيف المدخلات من المسافات وتحويلها لأحرف صغيرة لتجنب الأخطاء المطبعية
                 const user = loginUser.trim().toLowerCase();
                 const pass = loginPass.trim();
                 let validUser = null;
 
-                // 1. التحقق من حساب المدير بالبيانات الجديدة
+                // الخطوة الأولى: التحقق الصارم من حساب المدير العام بصلاحيات مطلقة
                 if (user === "zakiabuillan" && pass === "100200300") {
+                    // إذا تطابقت البيانات، امنحه دور 'admin' (المدير)
                     validUser = { id: 'admin', name: "المدير العام", role: "admin" };
                 } else {
-                    // 2. التحقق من حسابات المعلمين (تم إضافة حماية الأكواد لمنع التعطل)
+                    // الخطوة الثانية: إذا لم يكن المدير، ابحث في قائمة المعلمين
                     const teacher = teachers.find(t => {
-                        // استخدام || '' لضمان عدم تعطل النظام إذا كان الحقل فارغاً في البيانات القديمة
                         const tUser = (t.username || '').trim().toLowerCase();
                         const tPass = (t.password || '').trim();
                         return tUser === user && tPass === pass;
                     });
                     
                     if (teacher) { 
+                        // إذا وجدنا المعلم، امنحه دور 'teacher' (معلم)
                         validUser = { ...teacher, role: "teacher" }; 
                     }
                 }
 
+                // تنفيذ الدخول إذا تم العثور على مستخدم صالح
                 if (validUser) {
                     setCurrentUser(validUser);
                     setIsLoggedIn(true);
+                    
+                    // حفظ بيانات الدخول إذا اختار المستخدم "تذكرني"
                     if (rememberMe) {
                         localStorage.setItem('saved_taf_user', loginUser);
                         localStorage.setItem('saved_taf_pass', loginPass);
@@ -111,7 +122,7 @@
                 }
             };
 
-            // ميزة النسخ الاحتياطي
+            // ================== نظام النسخ الاحتياطي ==================
             const handleExportBackup = () => {
                 const data = { teachers, students, assignments, lessons };
                 const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
@@ -142,14 +153,16 @@
                 reader.readAsText(file);
             };
 
+            // دوال مساعدة لجلب الأسماء
             const getTeacherName = (id) => teachers.find(t => t.id === id)?.name || 'مُعرف غير صالح';
             const getStudentName = (id) => students.find(s => s.id === id)?.name || 'طالب محذوف';
 
+            // عمليات حسابية للوحة التحكم
             const totalAdminHours = lessons.reduce((sum, l) => sum + Number(l.hours) + (Number(l.mins) / 60), 0);
             const myLessons = lessons.filter(l => l.teacherId === currentUser?.id);
             const myAssignedStudents = assignments.filter(a => a.teacherId === currentUser?.id);
 
-            // واجهة تسجيل الدخول
+            // ================== واجهة تسجيل الدخول ==================
             if (!isLoggedIn) {
                 return (
                     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
@@ -173,6 +186,7 @@
                 );
             }
 
+            // ================== واجهة النظام الرئيسية بعد الدخول ==================
             return (
                 <div className="min-h-screen flex flex-col md:flex-row-reverse">
                     
@@ -185,6 +199,7 @@
                         
                         <button onClick={() => setView('dashboard')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-all ${view === 'dashboard' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}><Icon name="layout-dashboard" /> الرئيسية</button>
                         
+                        {/* أزرار تظهر فقط لمن يملك صلاحية المدير 'admin' */}
                         {currentUser.role === 'admin' && (
                             <>
                                 <button onClick={() => {setView('mgmt-teachers'); setEditingTeacher(null);}} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-all ${view === 'mgmt-teachers' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}><Icon name="users" /> إدارة المعلمين</button>
@@ -195,6 +210,7 @@
                             </>
                         )}
 
+                        {/* أزرار تظهر فقط لمن يملك صلاحية المعلم 'teacher' */}
                         {currentUser.role === 'teacher' && (
                             <>
                                 <button onClick={() => setView('add-lesson')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-all ${view === 'add-lesson' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}><Icon name="plus-circle" /> تسجيل حصة جديدة</button>
@@ -257,7 +273,6 @@
                                             setEditingTeacher(null);
                                             alert("تم تحديث بيانات المعلم بنجاح");
                                         } else {
-                                            // فحص التكرار (لتجنب حسابين بنفس اسم المستخدم)
                                             if (teachers.some(t => (t.username || '') === processedUsername)) { 
                                                 alert("تنبيه: اسم المستخدم هذا موجود مسبقاً."); 
                                                 return; 
