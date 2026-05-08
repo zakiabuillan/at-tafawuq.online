@@ -77,7 +77,6 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // محرك رسم الأيقونات
         const Icon = ({ name, size = 32, className = "" }) => {
             const iconRef = useRef(null);
             useEffect(() => {
@@ -108,7 +107,6 @@
         );
 
         const App = () => {
-            // التحقق من الجلسة المحفوظة مسبقاً (تذكرني)
             const [isLoggedIn, setIsLoggedIn] = useState(() => {
                 return !!localStorage.getItem('tafawuq_active_session');
             });
@@ -122,23 +120,19 @@
             const [alert, setAlert] = useState({ show: false, msg: '', type: 'success' });
             const [isSyncing, setIsSyncing] = useState(true);
 
-            // القوائم وقواعد البيانات
             const [teachers, setTeachers] = useState([]);
             const [students, setStudents] = useState([]);
             const [assignments, setAssignments] = useState([]);
             const [lessons, setLessons] = useState([]);
             
-            // نماذج الدخول والإضافة
             const [loginForm, setLoginForm] = useState({ user: '', pass: '' });
             const [showPassword, setShowPassword] = useState(false);
             const [rememberMe, setRememberMe] = useState(true); 
 
-            // حالات التعديل
             const [editingTeacher, setEditingTeacher] = useState(null);
             const [editingStudent, setEditingStudent] = useState(null);
             const [editingAssignment, setEditingAssignment] = useState(null);
 
-            // المزامنة مع Firebase
             useEffect(() => {
                 if (window.fb && window.fb.db) {
                     const { db, collection, onSnapshot } = window.fb;
@@ -164,7 +158,6 @@
                 }
             }, []);
 
-            // حفظ أو تعديل أو حذف البيانات
             const dbOp = async (collectionName, data, documentId = null) => {
                 if (!window.fb || !window.fb.db) {
                     showAlert('قاعدة البيانات غير مفعلة، يرجى وضع المفاتيح في الكود.', 'error');
@@ -194,7 +187,6 @@
                 setTimeout(() => setAlert({ show: false, msg: '', type: 'success' }), 3000);
             };
 
-            // تسجيل الخروج
             const handleLogout = () => {
                 setIsLoggedIn(false);
                 setCurrentUserData(null);
@@ -230,9 +222,6 @@
                 );
             }
 
-            // =========================================================================================
-            // شاشة تسجيل الدخول
-            // =========================================================================================
             if (!isLoggedIn) {
                 return (
                     <div className="min-h-screen flex items-center justify-center p-4 login-page-bg text-right font-black">
@@ -256,11 +245,9 @@
                                 const p = loginForm.pass.trim();
                                 let validUser = null;
                                 
-                                // مطابقة المدير
                                 if (u === 'zakiabuillan' && p === '100200300') {
                                     validUser = { id: 'admin', name: 'زكي أبو علان', role: 'admin' };
                                 } else {
-                                    // مطابقة المعلم
                                     const t = teachers.find(x => (x.username || '').toLowerCase() === u && x.password === p);
                                     if (t) { validUser = { ...t, role: 'teacher' }; } 
                                 }
@@ -268,7 +255,6 @@
                                 if (validUser) {
                                     setIsLoggedIn(true); 
                                     setCurrentUserData(validUser);
-                                    
                                     if (rememberMe) {
                                         localStorage.setItem('tafawuq_active_session', JSON.stringify(validUser));
                                     }
@@ -331,9 +317,6 @@
                             <h2 className="text-xl text-slate-800">{view}</h2>
                         </header>
 
-                        {/* ========================================================================================= */}
-                        {/* 1. لوحة التحكم الرئيسية */}
-                        {/* ========================================================================================= */}
                         {view === 'dashboard' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="bg-white p-8 rounded-3xl shadow-lg border-t-8 border-royal-gold text-center">
@@ -349,9 +332,6 @@
                             </div>
                         )}
 
-                        {/* ========================================================================================= */}
-                        {/* 2. شاشة إدارة المعلمين */}
-                        {/* ========================================================================================= */}
                         {view === 'mgmt-teachers' && currentUserData.role === 'admin' && (
                             <div className="space-y-8 animate-fade-in">
                                 <div className={`bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] ${editingTeacher ? 'border-[#c5a044] bg-amber-50' : 'border-[#1a3a5f]'}`}>
@@ -406,9 +386,6 @@
                             </div>
                         )}
 
-                        {/* ========================================================================================= */}
-                        {/* 3. شاشة إدارة الطلاب (التي كانت مفقودة وقمنا باسترجاعها) */}
-                        {/* ========================================================================================= */}
                         {view === 'mgmt-students' && currentUserData.role === 'admin' && (
                             <div className="space-y-8 animate-fade-in">
                                 <div className={`bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] ${editingStudent ? 'border-[#c5a044] bg-amber-50' : 'border-[#1a3a5f]'}`}>
@@ -451,9 +428,6 @@
                             </div>
                         )}
 
-                        {/* ========================================================================================= */}
-                        {/* 4. شاشة تنسيب الطلاب */}
-                        {/* ========================================================================================= */}
                         {view === 'assign' && currentUserData.role === 'admin' && (
                             <div className="space-y-8 animate-fade-in">
                                 <div className={`bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] ${editingAssignment ? 'border-[#c5a044] bg-amber-50' : 'border-[#1a3a5f]'}`}>
@@ -508,9 +482,6 @@
                             </div>
                         )}
 
-                        {/* ========================================================================================= */}
-                        {/* 5. شاشة تسجيل الحصص (للمعلم) */}
-                        {/* ========================================================================================= */}
                         {view === 'add-lesson' && currentUserData.role === 'teacher' && (
                             <div className="max-w-xl mx-auto bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] border-[#c5a044] animate-fade-in">
                                 <h3 className="text-2xl mb-8 text-[#1a3a5f] text-center flex items-center justify-center gap-2"><Icon name="PlusSquare" className="text-[#c5a044]" /> تسجيل حصة تعليمية</h3>
@@ -541,9 +512,6 @@
                             </div>
                         )}
 
-                        {/* ========================================================================================= */}
-                        {/* 6. سجل الحصص والتقارير */}
-                        {/* ========================================================================================= */}
                         {view === 'reports' && (
                             <div className="bg-white rounded-3xl shadow-xl overflow-hidden border animate-fade-in">
                                 <div className="bg-[#1a3a5f] text-white p-6 border-b flex justify-between items-center">
@@ -570,9 +538,6 @@
                             </div>
                         )}
 
-                        {/* ========================================================================================= */}
-                        {/* 7. التقرير المالي */}
-                        {/* ========================================================================================= */}
                         {view === 'finance' && currentUserData.role === 'admin' && (
                             <div className="bg-white rounded-3xl shadow-xl overflow-hidden border animate-fade-in">
                                 <div className="p-6 bg-slate-50 border-b"><h3 className="text-xl font-black">التقرير المالي المستحق</h3></div>
