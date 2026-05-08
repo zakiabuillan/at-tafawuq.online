@@ -5,24 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>أكاديمية التفوق - النظام المحاسبي الشامل</title>
     
-    <!-- المكتبات الأساسية -->
+    <!-- استدعاء المكتبات الأساسية (React, Tailwind, Lucide Icons) -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     
     <style>
+        /* تعريف المتغيرات اللونية الأساسية للأكاديمية */
         :root { --primary: #1a3a5f; --gold: #c5a044; --bg: #f8fafc; }
         body { font-family: 'Cairo', sans-serif; background-color: var(--bg); color: #1e293b; margin: 0; }
+        
         .royal-blue { background-color: var(--primary); }
         .text-royal-gold { color: var(--gold); }
-        .clear-input { border: 2px solid var(--primary) !important; border-radius: 1rem !important; padding: 1rem; outline: none; }
-        .clear-input:focus { border-color: var(--gold) !important; box-shadow: 0 0 0 3px rgba(197, 160, 68, 0.2); }
+        
+        /* تنسيق حقول الإدخال لتكون واضحة وجذابة */
+        .clear-input { border: 2px solid #e2e8f0; border-radius: 1rem; padding: 1rem; outline: none; transition: all 0.3s; }
+        .clear-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26, 58, 95, 0.1); }
+        
+        /* تنسيق الأزرار الرئيسية */
         .btn-main { background-color: var(--primary); color: white; font-weight: 900; transition: all 0.3s; }
-        .btn-main:hover { opacity: 0.9; transform: translateY(-2px); }
+        .btn-main:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        
+        /* حركات الظهور للواجهات */
         .animate-fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -33,118 +41,139 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // 1. مكون الأيقونات البسيط
+        // 1. مكون الأيقونات (يعمل على رسم الأيقونات بشكل ديناميكي)
         const Icon = ({ name, size = 24, className = "" }) => {
             const iconRef = useRef(null);
             useEffect(() => {
-                if (window.lucide) {
-                    window.lucide.createIcons();
-                }
+                if (window.lucide) { window.lucide.createIcons(); }
             }, [name]);
             return <i data-lucide={name.toLowerCase()} className={className} style={{ width: size, height: size }}></i>;
         };
 
         const App = () => {
-            // حالة تسجيل الدخول والواجهة الحالية
+            // 2. إدارة حالة التطبيق (State)
             const [isLoggedIn, setIsLoggedIn] = useState(false);
             const [view, setView] = useState('dashboard');
             const [currentUser, setCurrentUser] = useState(null);
             
-            // 2. إدارة قواعد البيانات (State) مع الحفظ التلقائي
-            const [teachers, setTeachers] = useState(() => JSON.parse(localStorage.getItem('teachers')) || []);
-            const [students, setStudents] = useState(() => JSON.parse(localStorage.getItem('students')) || []);
-            const [assignments, setAssignments] = useState(() => JSON.parse(localStorage.getItem('assignments')) || []);
-            const [lessons, setLessons] = useState(() => JSON.parse(localStorage.getItem('lessons')) || []);
+            // تهيئة قواعد البيانات المحلية (تسترجع البيانات السابقة أو تبدأ بمصفوفة فارغة)
+            const [teachers, setTeachers] = useState(() => JSON.parse(localStorage.getItem('taf_teachers')) || []);
+            const [students, setStudents] = useState(() => JSON.parse(localStorage.getItem('taf_students')) || []);
+            const [assignments, setAssignments] = useState(() => JSON.parse(localStorage.getItem('taf_assignments')) || []);
+            const [lessons, setLessons] = useState(() => JSON.parse(localStorage.getItem('taf_lessons')) || []);
 
-            useEffect(() => { localStorage.setItem('teachers', JSON.stringify(teachers)); }, [teachers]);
-            useEffect(() => { localStorage.setItem('students', JSON.stringify(students)); }, [students]);
-            useEffect(() => { localStorage.setItem('assignments', JSON.stringify(assignments)); }, [assignments]);
-            useEffect(() => { localStorage.setItem('lessons', JSON.stringify(lessons)); }, [lessons]);
+            // حفظ البيانات تلقائياً عند أي تغيير لضمان عدم ضياعها
+            useEffect(() => { localStorage.setItem('taf_teachers', JSON.stringify(teachers)); }, [teachers]);
+            useEffect(() => { localStorage.setItem('taf_students', JSON.stringify(students)); }, [students]);
+            useEffect(() => { localStorage.setItem('taf_assignments', JSON.stringify(assignments)); }, [assignments]);
+            useEffect(() => { localStorage.setItem('taf_lessons', JSON.stringify(lessons)); }, [lessons]);
 
-            // دوال مساعدة لجلب الأسماء
-            const getTeacherName = (id) => teachers.find(t => t.id === id)?.name || 'غير معروف';
-            const getStudentName = (id) => students.find(s => s.id === id)?.name || 'غير معروف';
+            // دوال مساعدة لجلب أسماء المعلمين والطلاب من خلال معرفاتهم (IDs)
+            const getTeacherName = (id) => teachers.find(t => t.id === id)?.name || 'مُعرف غير صالح';
+            const getStudentName = (id) => students.find(s => s.id === id)?.name || 'طالب محذوف';
 
-            // 3. دالة تسجيل الدخول
+            // 3. دالة التحقق من تسجيل الدخول
             const handleLogin = (e) => {
                 e.preventDefault();
-                const user = e.target.username.value;
-                const pass = e.target.password.value;
+                const user = e.target.username.value.trim().toLowerCase();
+                const pass = e.target.password.value.trim();
 
-                if (user === "admin" && pass === "123") {
-                    setCurrentUser({ id: 'admin', name: "المدير العام", role: "admin" });
+                // التحقق من بيانات المدير العام
+                if (user === "zakiabuillan@gmail.com" && pass === "zenazaki@2026") {
+                    setCurrentUser({ id: 'admin', name: "زكي أبو علان", role: "admin" });
                     setIsLoggedIn(true);
                 } else {
-                    const teacher = teachers.find(t => t.username === user && t.password === pass);
+                    // التحقق من بيانات المعلمين
+                    const teacher = teachers.find(t => t.username.toLowerCase() === user && t.password === pass);
                     if (teacher) {
                         setCurrentUser({ ...teacher, role: "teacher" });
                         setIsLoggedIn(true);
                     } else {
-                        alert("بيانات الدخول خاطئة");
+                        alert("بيانات الدخول غير صحيحة، يرجى المحاولة مرة أخرى.");
                     }
                 }
             };
 
-            // واجهة تسجيل الدخول
+            // حسابات إحصائية للوحة التحكم
+            const totalAdminHours = lessons.reduce((sum, l) => sum + Number(l.hours) + (Number(l.mins) / 60), 0);
+            const myLessons = lessons.filter(l => l.teacherId === currentUser?.id);
+            const myAssignedStudents = assignments.filter(a => a.teacherId === currentUser?.id);
+
+            // واجهة الدخول للمستخدم غير المسجل
             if (!isLoggedIn) {
                 return (
                     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-                        <div className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-md border-t-8 border-royal-blue text-center">
-                            <h2 className="text-2xl font-black mb-6 text-royal-blue">دخول الأكاديمية</h2>
-                            <form onSubmit={handleLogin} className="space-y-4">
-                                <input name="username" placeholder="اسم المستخدم (admin)" className="w-full clear-input text-left" dir="ltr" required />
-                                <input name="password" type="password" placeholder="كلمة المرور (123)" className="w-full clear-input text-left" dir="ltr" required />
-                                <button className="w-full btn-main py-4 rounded-2xl text-xl">دخول</button>
+                        <div className="bg-white p-10 rounded-[2rem] shadow-2xl w-full max-w-md border-t-[10px] border-[#1a3a5f] text-center animate-fade-in">
+                            <Icon name="graduation-cap" size={50} className="mx-auto text-[#c5a044] mb-4" />
+                            <h2 className="text-3xl font-black mb-2 text-[#1a3a5f]">أكاديمية التفوق</h2>
+                            <p className="text-sm font-bold text-slate-400 mb-8">النظام الإداري والمحاسبي</p>
+                            
+                            <form onSubmit={handleLogin} className="space-y-5">
+                                <div>
+                                    <label className="block text-right text-xs font-bold text-slate-500 mb-1">البريد الإلكتروني أو اسم المستخدم</label>
+                                    <input name="username" className="w-full clear-input text-left font-bold" dir="ltr" required />
+                                </div>
+                                <div>
+                                    <label className="block text-right text-xs font-bold text-slate-500 mb-1">كلمة المرور</label>
+                                    <input name="password" type="password" className="w-full clear-input text-left font-bold" dir="ltr" required />
+                                </div>
+                                <button className="w-full btn-main py-4 rounded-2xl text-xl mt-2 flex items-center justify-center gap-2">
+                                    <Icon name="log-in" size={20} /> دخول النظام
+                                </button>
                             </form>
                         </div>
                     </div>
                 );
             }
 
-            // حسابات لوحة التحكم (الساعات والإجماليات)
-            const totalAdminHours = lessons.reduce((sum, l) => sum + Number(l.hours) + (Number(l.mins) / 60), 0);
-            const myLessons = lessons.filter(l => l.teacherId === currentUser.id);
-            const myAssignedStudents = assignments.filter(a => a.teacherId === currentUser.id);
-
             return (
                 <div className="min-h-screen flex flex-col md:flex-row-reverse">
                     
-                    {/* 4. القائمة الجانبية */}
-                    <aside className="w-full md:w-64 bg-[#1a3a5f] text-white p-6 flex flex-col gap-4 shadow-2xl z-10">
-                        <div className="text-center mb-6 border-b border-white/10 pb-4">
-                            <h1 className="font-black text-xl">أكاديمية التفوق</h1>
+                    {/* 4. القائمة الجانبية (Sidebar) */}
+                    <aside className="w-full md:w-72 bg-[#1a3a5f] text-white p-6 flex flex-col gap-3 shadow-2xl z-10">
+                        <div className="text-center mb-8 border-b border-white/10 pb-6 mt-4">
+                            <h1 className="font-black text-2xl text-[#c5a044]">أكاديمية التفوق</h1>
+                            <p className="text-xs mt-2 opacity-70 font-bold">{currentUser.name}</p>
                         </div>
                         
-                        <button onClick={() => setView('dashboard')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-colors ${view === 'dashboard' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
+                        <button onClick={() => setView('dashboard')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-all ${view === 'dashboard' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
                             <Icon name="layout-dashboard" /> الرئيسية
                         </button>
                         
+                        {/* روابط المدير العام */}
                         {currentUser.role === 'admin' && (
                             <>
-                                <button onClick={() => setView('assign')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-colors ${view === 'assign' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
+                                <button onClick={() => setView('mgmt-teachers')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-all ${view === 'mgmt-teachers' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
+                                    <Icon name="users" /> إدارة المعلمين
+                                </button>
+                                <button onClick={() => setView('mgmt-students')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-all ${view === 'mgmt-students' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
+                                    <Icon name="user-plus" /> إدارة الطلاب
+                                </button>
+                                <button onClick={() => setView('assign')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-all ${view === 'assign' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
                                     <Icon name="link" /> تنسيب الطلاب
                                 </button>
-                                <button onClick={() => setView('reports')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-colors ${view === 'reports' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
+                                <button onClick={() => setView('reports')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-all ${view === 'reports' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
                                     <Icon name="file-text" /> سجل الحصص العام
                                 </button>
-                                <button onClick={() => setView('finance')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-colors ${view === 'finance' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
+                                <button onClick={() => setView('finance')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-all ${view === 'finance' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
                                     <Icon name="pie-chart" /> التقارير المالية
                                 </button>
                             </>
                         )}
 
+                        {/* روابط المعلم */}
                         {currentUser.role === 'teacher' && (
                             <>
-                                <button onClick={() => setView('add-lesson')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-colors ${view === 'add-lesson' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
+                                <button onClick={() => setView('add-lesson')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-all ${view === 'add-lesson' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
                                     <Icon name="plus-circle" /> تسجيل حصة جديدة
                                 </button>
-                                <button onClick={() => setView('reports')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-colors ${view === 'reports' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
-                                    <Icon name="file-text" /> حصصي المسجلة
+                                <button onClick={() => setView('reports')} className={`p-4 rounded-xl text-right flex items-center gap-3 font-bold transition-all ${view === 'reports' ? 'bg-[#c5a044] text-[#1a3a5f]' : 'hover:bg-white/10'}`}>
+                                    <Icon name="file-text" /> سجل الحصص
                                 </button>
                             </>
                         )}
 
-                        <button onClick={() => setIsLoggedIn(false)} className="mt-auto p-4 text-red-400 font-bold flex items-center gap-3 hover:bg-red-500/10 rounded-xl transition-colors">
+                        <button onClick={() => setIsLoggedIn(false)} className="mt-auto p-4 text-red-300 font-bold flex items-center gap-3 hover:bg-red-500/20 rounded-xl transition-all">
                             <Icon name="log-out" /> تسجيل الخروج
                         </button>
                     </aside>
@@ -155,96 +184,69 @@
                         {/* ================= الواجهة الرئيسية ================= */}
                         {view === 'dashboard' && (
                             <div className="animate-fade-in grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="bg-white p-8 rounded-3xl shadow-lg border-r-8 border-[#c5a044]">
-                                    <h3 className="text-slate-400 text-sm font-bold mb-2">مرحباً بك</h3>
-                                    <p className="text-2xl font-black">{currentUser.name}</p>
+                                <div className="bg-white p-8 rounded-[2rem] shadow-lg border-r-8 border-[#c5a044]">
+                                    <div className="p-3 bg-amber-50 text-[#c5a044] rounded-2xl w-fit mb-4"><Icon name="user" size={30} /></div>
+                                    <h3 className="text-slate-400 text-sm font-bold mb-1">مرحباً بك في لوحة التحكم</h3>
+                                    <p className="text-3xl font-black text-[#1a3a5f]">{currentUser.name}</p>
                                 </div>
-                                <div className="bg-white p-8 rounded-3xl shadow-lg border-r-8 border-blue-900">
-                                    <h3 className="text-slate-400 text-sm font-bold mb-2">
+                                <div className="bg-white p-8 rounded-[2rem] shadow-lg border-r-8 border-[#1a3a5f]">
+                                    <div className="p-3 bg-blue-50 text-[#1a3a5f] rounded-2xl w-fit mb-4"><Icon name="clock" size={30} /></div>
+                                    <h3 className="text-slate-400 text-sm font-bold mb-1">
                                         {currentUser.role === 'admin' ? 'إجمالي الساعات المسجلة بالمنصة' : 'إجمالي الساعات التي درستها'}
                                     </h3>
-                                    <p className="text-4xl font-black">
+                                    <p className="text-4xl font-black text-[#1a3a5f]">
                                         {currentUser.role === 'admin' 
-                                            ? totalAdminHours.toFixed(1) 
-                                            : myLessons.reduce((sum, l) => sum + Number(l.hours) + (Number(l.mins) / 60), 0).toFixed(1)} <span className="text-lg">ساعة</span>
+                                            ? totalAdminHours.toFixed(2) 
+                                            : myLessons.reduce((sum, l) => sum + Number(l.hours) + (Number(l.mins) / 60), 0).toFixed(2)} <span className="text-lg">ساعة</span>
                                     </p>
                                 </div>
                             </div>
                         )}
 
-                        {/* ================= واجهة تنسيب الطلاب (مع الإصلاح) ================= */}
-                        {view === 'assign' && currentUser.role === 'admin' && (
+                        {/* ================= إدارة المعلمين (للمدير) ================= */}
+                        {view === 'mgmt-teachers' && currentUser.role === 'admin' && (
                             <div className="animate-fade-in space-y-8">
-                                {/* نموذج الإضافة */}
-                                <div className="bg-white p-8 rounded-3xl shadow-xl border-t-8 border-[#1a3a5f]">
-                                    <h3 className="text-2xl font-black mb-6 text-[#1a3a5f] flex items-center gap-2">
-                                        <Icon name="link" className="text-[#c5a044]" /> تنسيب وربط طالب بمعلم
-                                    </h3>
+                                <div className="bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] border-[#1a3a5f]">
+                                    <h3 className="text-2xl font-black mb-6 text-[#1a3a5f] flex items-center gap-2"><Icon name="user-plus" /> إضافة معلم جديد</h3>
                                     <form className="space-y-4" onSubmit={(e) => {
                                         e.preventDefault();
-                                        const newAssignment = {
+                                        const newTeacher = {
                                             id: Date.now().toString(),
-                                            teacherId: e.target.teacherId.value,
-                                            studentId: e.target.studentId.value
+                                            name: e.target.name.value.trim(),
+                                            username: e.target.username.value.trim(),
+                                            password: e.target.password.value.trim(),
+                                            rate: Number(e.target.rate.value)
                                         };
-                                        setAssignments([...assignments, newAssignment]);
-                                        alert("تم ربط الطالب بالمعلم بنجاح!");
+                                        setTeachers([...teachers, newTeacher]);
+                                        e.target.reset();
+                                        alert("تمت إضافة المعلم بنجاح");
                                     }}>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block font-bold mb-2 text-sm text-slate-600">المعلم</label>
-                                                <select name="teacherId" className="w-full clear-input" required>
-                                                    <option value="">-- اختر المعلم --</option>
-                                                    {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                                    {/* بيانات تجريبية في حال لم تضف معلمين بعد */}
-                                                    <option value="t1">أ. أحمد (معلم تجريبي)</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block font-bold mb-2 text-sm text-slate-600">الطالب</label>
-                                                <select name="studentId" className="w-full clear-input" required>
-                                                    <option value="">-- اختر الطالب --</option>
-                                                    {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                                    {/* بيانات تجريبية */}
-                                                    <option value="s1">طالب تجريبي 1</option>
-                                                    <option value="s2">طالب تجريبي 2</option>
-                                                </select>
-                                            </div>
+                                            <input name="name" placeholder="اسم المعلم الرباعي" className="w-full clear-input" required />
+                                            <input name="rate" type="number" placeholder="أجر الساعة (₪)" className="w-full clear-input text-left" dir="ltr" required />
+                                            <input name="username" placeholder="اسم المستخدم للدخول" className="w-full clear-input text-left" dir="ltr" required />
+                                            <input name="password" type="text" placeholder="كلمة المرور" className="w-full clear-input text-left" dir="ltr" required />
                                         </div>
-                                        <button className="w-full btn-main py-4 rounded-xl mt-4 text-lg">إتمام عملية التنسيب</button>
+                                        <button className="w-full btn-main py-4 rounded-xl mt-4 text-lg">حفظ بيانات المعلم</button>
                                     </form>
                                 </div>
 
-                                {/* قائمة التنسيبات الحالية (الحل للمشكلة الأولى) */}
                                 <div className="bg-white rounded-3xl shadow-xl overflow-hidden border">
                                     <div className="bg-slate-50 p-6 border-b flex items-center gap-2">
-                                        <Icon name="users" className="text-[#1a3a5f]" />
-                                        <h3 className="text-xl font-black">قائمة التنسيبات الحالية</h3>
+                                        <h3 className="text-xl font-black">قائمة المعلمين المسجلين</h3>
                                     </div>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-right">
-                                            <thead className="bg-slate-100 border-b">
-                                                <tr>
-                                                    <th className="p-4 font-bold text-slate-600">المعلم المكلّف</th>
-                                                    <th className="p-4 font-bold text-slate-600">الطالب المنسوب</th>
-                                                    <th className="p-4 font-bold text-slate-600 text-center">إجراء</th>
-                                                </tr>
-                                            </thead>
+                                            <thead className="bg-slate-100 border-b"><tr><th className="p-4 font-bold">الاسم</th><th className="p-4 font-bold">User/Pass</th><th className="p-4 font-bold text-center">أجر الساعة</th><th className="p-4 font-bold text-center">إجراء</th></tr></thead>
                                             <tbody>
-                                                {assignments.map(a => (
-                                                    <tr key={a.id} className="border-b last:border-0 hover:bg-slate-50">
-                                                        <td className="p-4 font-bold text-[#1a3a5f]">{getTeacherName(a.teacherId) || a.teacherId}</td>
-                                                        <td className="p-4">{getStudentName(a.studentId) || a.studentId}</td>
-                                                        <td className="p-4 text-center">
-                                                            <button onClick={() => setAssignments(assignments.filter(x => x.id !== a.id))} className="text-red-500 hover:text-red-700">
-                                                                <Icon name="trash-2" size={20} />
-                                                            </button>
-                                                        </td>
+                                                {teachers.map(t => (
+                                                    <tr key={t.id} className="border-b hover:bg-slate-50">
+                                                        <td className="p-4 font-bold">{t.name}</td>
+                                                        <td className="p-4 text-slate-500" dir="ltr">{t.username} / {t.password}</td>
+                                                        <td className="p-4 text-center font-bold text-[#c5a044]">{t.rate} ₪</td>
+                                                        <td className="p-4 text-center"><button onClick={() => setTeachers(teachers.filter(x => x.id !== t.id))} className="text-red-500"><Icon name="trash-2" size={20} /></button></td>
                                                     </tr>
                                                 ))}
-                                                {assignments.length === 0 && (
-                                                    <tr><td colSpan="3" className="p-8 text-center text-slate-400">لا يوجد طلاب منسوبين حالياً</td></tr>
-                                                )}
                                             </tbody>
                                         </table>
                                     </div>
@@ -252,97 +254,148 @@
                             </div>
                         )}
 
-                        {/* ================= واجهة تسجيل حصة (للمعلم) ================= */}
+                        {/* ================= إدارة الطلاب (للمدير) ================= */}
+                        {view === 'mgmt-students' && currentUser.role === 'admin' && (
+                            <div className="animate-fade-in space-y-8">
+                                <div className="bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] border-[#1a3a5f]">
+                                    <h3 className="text-2xl font-black mb-6 text-[#1a3a5f] flex items-center gap-2"><Icon name="user-plus" /> إضافة طالب جديد</h3>
+                                    <form className="flex flex-col md:flex-row gap-4" onSubmit={(e) => {
+                                        e.preventDefault();
+                                        setStudents([...students, { id: Date.now().toString(), name: e.target.name.value.trim() }]);
+                                        e.target.reset();
+                                        alert("تم تسجيل الطالب");
+                                    }}>
+                                        <input name="name" placeholder="اسم الطالب الرباعي" className="flex-1 clear-input" required />
+                                        <button className="btn-main px-8 py-4 rounded-xl text-lg w-full md:w-auto">تسجيل</button>
+                                    </form>
+                                </div>
+                                <div className="bg-white rounded-3xl shadow-xl overflow-hidden border">
+                                    <div className="bg-slate-50 p-6 border-b"><h3 className="text-xl font-black">قائمة الطلاب</h3></div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-right">
+                                            <thead className="bg-slate-100 border-b"><tr><th className="p-4 font-bold">اسم الطالب</th><th className="p-4 font-bold text-center">إجراء</th></tr></thead>
+                                            <tbody>
+                                                {students.map(s => (
+                                                    <tr key={s.id} className="border-b hover:bg-slate-50">
+                                                        <td className="p-4 font-bold">{s.name}</td>
+                                                        <td className="p-4 text-center"><button onClick={() => setStudents(students.filter(x => x.id !== s.id))} className="text-red-500"><Icon name="trash-2" size={20} /></button></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ================= تنسيب الطلاب ================= */}
+                        {view === 'assign' && currentUser.role === 'admin' && (
+                            <div className="animate-fade-in space-y-8">
+                                <div className="bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] border-[#c5a044]">
+                                    <h3 className="text-2xl font-black mb-6 text-[#1a3a5f] flex items-center gap-2"><Icon name="link" className="text-[#c5a044]" /> تنسيب طالب لمعلم</h3>
+                                    <form className="space-y-4" onSubmit={(e) => {
+                                        e.preventDefault();
+                                        setAssignments([...assignments, { id: Date.now().toString(), teacherId: e.target.teacherId.value, studentId: e.target.studentId.value }]);
+                                        alert("تم التنسيب بنجاح");
+                                    }}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block font-bold mb-2 text-sm text-slate-600">المعلم</label>
+                                                <select name="teacherId" className="w-full clear-input bg-white" required>
+                                                    <option value="">-- اختر المعلم --</option>
+                                                    {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block font-bold mb-2 text-sm text-slate-600">الطالب</label>
+                                                <select name="studentId" className="w-full clear-input bg-white" required>
+                                                    <option value="">-- اختر الطالب --</option>
+                                                    {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <button className="w-full bg-[#c5a044] hover:bg-amber-600 text-white font-black py-4 rounded-xl mt-4 text-lg transition-colors">إتمام التنسيب</button>
+                                    </form>
+                                </div>
+
+                                <div className="bg-white rounded-3xl shadow-xl overflow-hidden border">
+                                    <div className="bg-slate-50 p-6 border-b"><h3 className="text-xl font-black">التنسيبات الحالية</h3></div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-right">
+                                            <thead className="bg-slate-100 border-b"><tr><th className="p-4 font-bold">المعلم المكلّف</th><th className="p-4 font-bold">الطالب المنسوب</th><th className="p-4 font-bold text-center">إجراء</th></tr></thead>
+                                            <tbody>
+                                                {assignments.map(a => (
+                                                    <tr key={a.id} className="border-b hover:bg-slate-50">
+                                                        <td className="p-4 font-bold text-[#1a3a5f]">{getTeacherName(a.teacherId)}</td>
+                                                        <td className="p-4">{getStudentName(a.studentId)}</td>
+                                                        <td className="p-4 text-center"><button onClick={() => setAssignments(assignments.filter(x => x.id !== a.id))} className="text-red-500"><Icon name="trash-2" size={20} /></button></td>
+                                                    </tr>
+                                                ))}
+                                                {assignments.length === 0 && <tr><td colSpan="3" className="p-8 text-center text-slate-400">لا يوجد بيانات</td></tr>}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ================= تسجيل حصة (للمعلم) ================= */}
                         {view === 'add-lesson' && currentUser.role === 'teacher' && (
-                            <div className="max-w-xl mx-auto bg-white p-8 rounded-[2rem] shadow-xl animate-fade-in border-t-[10px] border-[#c5a044]">
-                                <h3 className="text-2xl font-black mb-8 text-[#1a3a5f] text-center flex items-center justify-center gap-2">
-                                    <Icon name="plus-square" className="text-[#c5a044]" /> تسجيل حصة تعليمية
-                                </h3>
+                            <div className="max-w-xl mx-auto bg-white p-8 rounded-[2rem] shadow-xl animate-fade-in border-t-[8px] border-[#c5a044]">
+                                <h3 className="text-2xl font-black mb-8 text-[#1a3a5f] text-center flex items-center justify-center gap-2"><Icon name="plus-square" className="text-[#c5a044]" /> تسجيل حصة تعليمية</h3>
                                 <form className="space-y-5" onSubmit={(e) => {
                                     e.preventDefault();
                                     const newLesson = {
-                                        id: Date.now().toString(),
-                                        teacherId: currentUser.id,
-                                        studentId: e.target.studentId.value,
-                                        subject: e.target.subject.value,
-                                        hours: Number(e.target.hours.value),
-                                        mins: Number(e.target.mins.value),
-                                        date: e.target.date.value
+                                        id: Date.now().toString(), teacherId: currentUser.id, studentId: e.target.studentId.value,
+                                        subject: e.target.subject.value, hours: Number(e.target.hours.value), mins: Number(e.target.mins.value), date: e.target.date.value
                                     };
                                     setLessons([newLesson, ...lessons]);
                                     e.target.reset();
-                                    alert("تم حفظ الحصة بنجاح في السجل!");
+                                    alert("تم حفظ الحصة!");
                                     setView('reports');
                                 }}>
                                     <div>
-                                        <label className="block text-sm font-bold text-slate-500 mb-2">اختر الطالب (من طلابك فقط)</label>
-                                        <select name="studentId" className="w-full clear-input" required>
-                                            <option value="">-- اختر من القائمة --</option>
-                                            {/* عرض الطلاب المربوطين بهذا المعلم فقط */}
-                                            {myAssignedStudents.map(a => <option key={a.id} value={a.studentId}>{getStudentName(a.studentId) || a.studentId}</option>)}
+                                        <label className="block text-sm font-bold text-slate-500 mb-2">الطالب المنسوب لك</label>
+                                        <select name="studentId" className="w-full clear-input bg-white" required>
+                                            <option value="">-- اختر الطالب --</option>
+                                            {myAssignedStudents.map(a => <option key={a.id} value={a.studentId}>{getStudentName(a.studentId)}</option>)}
                                         </select>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-500 mb-2">المادة الدراسية</label>
-                                        <input name="subject" placeholder="مثال: رياضيات، كيمياء" className="w-full clear-input" required />
-                                    </div>
+                                    <div><label className="block text-sm font-bold text-slate-500 mb-2">المادة الدراسية</label><input name="subject" className="w-full clear-input" required /></div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-500 mb-2 text-center">ساعات</label>
-                                            <input name="hours" type="number" min="0" className="w-full clear-input text-center text-xl font-bold" defaultValue="0" required />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-500 mb-2 text-center">دقائق</label>
-                                            <input name="mins" type="number" min="0" max="59" className="w-full clear-input text-center text-xl font-bold" defaultValue="0" required />
-                                        </div>
+                                        <div><label className="block text-sm font-bold text-slate-500 mb-2 text-center">ساعات</label><input name="hours" type="number" min="0" className="w-full clear-input text-center text-xl font-bold" defaultValue="0" required /></div>
+                                        <div><label className="block text-sm font-bold text-slate-500 mb-2 text-center">دقائق</label><input name="mins" type="number" min="0" max="59" className="w-full clear-input text-center text-xl font-bold" defaultValue="0" required /></div>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-500 mb-2">تاريخ الحصة</label>
-                                        <input name="date" type="date" className="w-full clear-input" defaultValue={new Date().toISOString().split('T')[0]} required />
-                                    </div>
-                                    <button className="w-full btn-main py-5 rounded-2xl flex justify-center items-center gap-3 text-xl mt-4">
-                                        <Icon name="check-circle" /> إرسال واعتماد الحصة
-                                    </button>
+                                    <div><label className="block text-sm font-bold text-slate-500 mb-2">تاريخ الحصة</label><input name="date" type="date" className="w-full clear-input text-center" defaultValue={new Date().toISOString().split('T')[0]} required /></div>
+                                    <button className="w-full btn-main py-5 rounded-2xl flex justify-center items-center gap-3 text-xl mt-4">إرسال واعتماد الحصة</button>
                                 </form>
                             </div>
                         )}
 
-                        {/* ================= واجهة سجل الحصص (الحل للمشكلة الثانية) ================= */}
+                        {/* ================= سجل الحصص ================= */}
                         {view === 'reports' && (
                             <div className="animate-fade-in bg-white rounded-3xl shadow-xl overflow-hidden border">
                                 <div className="bg-[#1a3a5f] text-white p-6 border-b flex justify-between items-center">
-                                    <h3 className="text-xl font-black flex items-center gap-2">
-                                        <Icon name="file-text" className="text-[#c5a044]"/>
-                                        {currentUser.role === 'admin' ? 'السجل العام لجميع حصص المنصة' : 'سجل حصصك الخاص'}
-                                    </h3>
-                                    <div className="bg-white/20 px-4 py-2 rounded-xl text-sm font-bold">
-                                        إجمالي الحصص: {currentUser.role === 'admin' ? lessons.length : myLessons.length}
-                                    </div>
+                                    <h3 className="text-xl font-black flex items-center gap-2"><Icon name="file-text" className="text-[#c5a044]"/>{currentUser.role === 'admin' ? 'السجل العام لجميع الحصص' : 'سجل حصصك الخاص'}</h3>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-right text-sm">
                                         <thead className="bg-slate-100 border-b">
-                                            <tr>
-                                                <th className="p-4 font-bold text-slate-600">التاريخ</th>
-                                                {currentUser.role === 'admin' && <th className="p-4 font-bold text-slate-600">المعلم</th>}
-                                                <th className="p-4 font-bold text-slate-600">الطالب</th>
-                                                <th className="p-4 font-bold text-slate-600">المادة</th>
-                                                <th className="p-4 font-bold text-slate-600 text-center">المدة (س:د)</th>
-                                            </tr>
+                                            <tr><th className="p-4 font-bold text-slate-600">التاريخ</th>{currentUser.role === 'admin' && <th className="p-4 font-bold text-slate-600">المعلم</th>}<th className="p-4 font-bold text-slate-600">الطالب</th><th className="p-4 font-bold text-slate-600">المادة</th><th className="p-4 font-bold text-slate-600 text-center">المدة</th>{currentUser.role === 'admin' && <th className="p-4 font-bold text-slate-600 text-center">حذف</th>}</tr>
                                         </thead>
                                         <tbody>
-                                            {/* عرض كل الحصص للمدير، وحصص المعلم لنفسه فقط */}
                                             {(currentUser.role === 'admin' ? lessons : myLessons).map(l => (
-                                                <tr key={l.id} className="border-b last:border-0 hover:bg-slate-50">
+                                                <tr key={l.id} className="border-b hover:bg-slate-50">
                                                     <td className="p-4 text-slate-500 font-bold" dir="ltr">{l.date}</td>
-                                                    {currentUser.role === 'admin' && <td className="p-4 font-bold text-[#1a3a5f]">{getTeacherName(l.teacherId) || l.teacherId}</td>}
-                                                    <td className="p-4">{getStudentName(l.studentId) || l.studentId}</td>
+                                                    {currentUser.role === 'admin' && <td className="p-4 font-bold text-[#1a3a5f]">{getTeacherName(l.teacherId)}</td>}
+                                                    <td className="p-4">{getStudentName(l.studentId)}</td>
                                                     <td className="p-4">{l.subject}</td>
                                                     <td className="p-4 text-center font-bold text-blue-700">{l.hours}س و {l.mins}د</td>
+                                                    {currentUser.role === 'admin' && <td className="p-4 text-center"><button onClick={() => setLessons(lessons.filter(x => x.id !== l.id))} className="text-red-400 hover:text-red-600"><Icon name="trash-2" size={18} /></button></td>}
                                                 </tr>
                                             ))}
                                             {((currentUser.role === 'admin' ? lessons : myLessons).length === 0) && (
-                                                <tr><td colSpan={currentUser.role === 'admin' ? 5 : 4} className="p-8 text-center text-slate-400">لا توجد حصص مسجلة حتى الآن</td></tr>
+                                                <tr><td colSpan={currentUser.role === 'admin' ? 6 : 4} className="p-8 text-center text-slate-400">لا توجد حصص مسجلة</td></tr>
                                             )}
                                         </tbody>
                                     </table>
@@ -350,15 +403,37 @@
                             </div>
                         )}
 
-                        {/* ================= التقارير المالية (تم الإبقاء عليها كما هي) ================= */}
+                        {/* ================= التقارير المالية (للمدير) ================= */}
                         {view === 'finance' && currentUser.role === 'admin' && (
-                            <div className="animate-fade-in bg-white p-8 rounded-3xl shadow-xl text-center">
-                                <Icon name="pie-chart" size={60} className="mx-auto text-[#c5a044] mb-4" />
-                                <h2 className="text-2xl font-black mb-2 text-[#1a3a5f]">التقارير المالية</h2>
-                                <p className="text-slate-500">تم تجهيز هذه الواجهة مسبقاً، يمكنك ربطها ببيانات الساعات المعروضة في سجل الحصص العام.</p>
+                            <div className="animate-fade-in space-y-8">
+                                <div className="bg-[#1a3a5f] text-white p-8 rounded-3xl shadow-lg flex justify-between items-center flex-wrap gap-4">
+                                    <div><h2 className="text-2xl font-black mb-2">التقرير المالي المستحق</h2><p className="text-slate-300 text-sm">مستحقات المعلمين بناءً على الساعات المسجلة وأجر الساعة</p></div>
+                                </div>
+                                <div className="bg-white rounded-3xl shadow-xl overflow-hidden border">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-right">
+                                            <thead className="bg-slate-50 border-b"><tr><th className="p-4 font-black">اسم المعلم</th><th className="p-4 font-black text-center">أجر الساعة</th><th className="p-4 font-black text-center">إجمالي الساعات</th><th className="p-4 font-black text-[#1a3a5f] text-left">المبلغ المستحق</th></tr></thead>
+                                            <tbody>
+                                                {teachers.map(t => {
+                                                    const tLessons = lessons.filter(l => l.teacherId === t.id);
+                                                    const tHours = tLessons.reduce((sum, l) => sum + Number(l.hours) + (Number(l.mins) / 60), 0);
+                                                    const tPayout = Math.round(tHours * (t.rate || 0));
+                                                    return (
+                                                        <tr key={t.id} className="border-b hover:bg-slate-50">
+                                                            <td className="p-4 font-bold text-lg">{t.name}</td>
+                                                            <td className="p-4 text-center">{t.rate || 0} ₪</td>
+                                                            <td className="p-4 text-center font-bold" dir="ltr">{tHours.toFixed(2)}</td>
+                                                            <td className="p-4 text-left font-black text-[#c5a044] text-xl">{tPayout} ₪</td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                                {teachers.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-slate-400">لا يوجد معلمون لعرض مستحقاتهم</td></tr>}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         )}
-
                     </main>
                 </div>
             );
