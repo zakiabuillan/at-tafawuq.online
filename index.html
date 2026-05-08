@@ -77,6 +77,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
+        // محرك رسم الأيقونات
         const Icon = ({ name, size = 32, className = "" }) => {
             const iconRef = useRef(null);
             useEffect(() => {
@@ -107,21 +108,32 @@
         );
 
         const App = () => {
-            const [isLoggedIn, setIsLoggedIn] = useState(false);
-            const [currentUserData, setCurrentUserData] = useState(null);
+            // التحقق من الجلسة المحفوظة مسبقاً (تذكرني)
+            const [isLoggedIn, setIsLoggedIn] = useState(() => {
+                return !!localStorage.getItem('tafawuq_active_session');
+            });
+            const [currentUserData, setCurrentUserData] = useState(() => {
+                const saved = localStorage.getItem('tafawuq_active_session');
+                return saved ? JSON.parse(saved) : null;
+            });
+
             const [view, setView] = useState('dashboard');
             const [isSidebarOpen, setSidebarOpen] = useState(false);
             const [alert, setAlert] = useState({ show: false, msg: '', type: 'success' });
             const [isSyncing, setIsSyncing] = useState(true);
 
+            // القوائم وقواعد البيانات
             const [teachers, setTeachers] = useState([]);
             const [students, setStudents] = useState([]);
             const [assignments, setAssignments] = useState([]);
             const [lessons, setLessons] = useState([]);
             
+            // نماذج الدخول والإضافة
             const [loginForm, setLoginForm] = useState({ user: '', pass: '' });
             const [showPassword, setShowPassword] = useState(false);
+            const [rememberMe, setRememberMe] = useState(true); 
 
+            // حالات التعديل
             const [editingTeacher, setEditingTeacher] = useState(null);
             const [editingStudent, setEditingStudent] = useState(null);
             const [editingAssignment, setEditingAssignment] = useState(null);
@@ -182,22 +194,25 @@
                 setTimeout(() => setAlert({ show: false, msg: '', type: 'success' }), 3000);
             };
 
+            // تسجيل الخروج
+            const handleLogout = () => {
+                setIsLoggedIn(false);
+                setCurrentUserData(null);
+                localStorage.removeItem('tafawuq_active_session'); 
+            };
+
             const getStudentName = (id) => students.find(s => s.id === id)?.name || 'طالب محذوف';
             const getTeacherName = (id) => teachers.find(t => t.id === id)?.name || 'معلم محذوف';
 
             const sortedLessons = [...lessons].sort((a, b) => new Date(b.date) - new Date(a.date));
             const myLessons = lessons.filter(l => l.teacherId === currentUserData?.id);
             
-            // =========================================================================================
-            //  المصفاة الذكية: منع تكرار أسماء الطلاب في القائمة المنسدلة للمعلم
-            // =========================================================================================
             const myAssignedStudents = assignments.filter(a => a.teacherId === currentUserData?.id);
             const uniqueStudentsForDropdown = [];
             const seenStudentNames = new Set();
             
             myAssignedStudents.forEach(a => {
                 const studentName = getStudentName(a.studentId);
-                // نتأكد أن الاسم لم يظهر سابقاً وأنه ليس طالباً محذوفاً
                 if (!seenStudentNames.has(studentName) && studentName !== 'طالب محذوف') {
                     seenStudentNames.add(studentName);
                     uniqueStudentsForDropdown.push({ id: a.studentId, name: studentName });
@@ -215,6 +230,9 @@
                 );
             }
 
+            // =========================================================================================
+            // شاشة تسجيل الدخول
+            // =========================================================================================
             if (!isLoggedIn) {
                 return (
                     <div className="min-h-screen flex items-center justify-center p-4 login-page-bg text-right font-black">
@@ -236,13 +254,26 @@
                                 e.preventDefault();
                                 const u = loginForm.user.trim().toLowerCase();
                                 const p = loginForm.pass.trim();
+                                let validUser = null;
                                 
+                                // مطابقة المدير
                                 if (u === 'zakiabuillan' && p === '100200300') {
-                                    setIsLoggedIn(true); setCurrentUserData({ id: 'admin', name: 'زكي أبو علان', role: 'admin' });
+                                    validUser = { id: 'admin', name: 'زكي أبو علان', role: 'admin' };
                                 } else {
+                                    // مطابقة المعلم
                                     const t = teachers.find(x => (x.username || '').toLowerCase() === u && x.password === p);
-                                    if (t) { setIsLoggedIn(true); setCurrentUserData({ ...t, role: 'teacher' }); } 
-                                    else { showAlert('بيانات الدخول غير صحيحة', 'error'); }
+                                    if (t) { validUser = { ...t, role: 'teacher' }; } 
+                                }
+
+                                if (validUser) {
+                                    setIsLoggedIn(true); 
+                                    setCurrentUserData(validUser);
+                                    
+                                    if (rememberMe) {
+                                        localStorage.setItem('tafawuq_active_session', JSON.stringify(validUser));
+                                    }
+                                } else {
+                                    showAlert('اسم المستخدم أو كلمة المرور غير صحيحة', 'error');
                                 }
                             }} className="space-y-5 font-black">
                                 <div>
@@ -256,6 +287,13 @@
                                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-royal-blue"><Icon name={showPassword ? "EyeOff" : "Eye"} size={22}/></button>
                                     </div>
                                 </div>
+                                
+                                <div className="flex items-center justify-start mt-2">
+                                    <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-slate-600 hover:text-[#1a3a5f] transition-colors">
+                                        <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 cursor-pointer" /> تذكر تسجيل الدخول
+                                    </label>
+                                </div>
+
                                 <button className="w-full btn-gold py-5 rounded-2xl shadow-xl text-xl flex items-center justify-center gap-3">دخول <Icon name="LogIn" size={24}/></button>
                             </form>
                         </div>
@@ -284,7 +322,7 @@
                             )}
                             <NavItem icon="FileText" label={currentUserData.role === 'admin' ? "سجل الحصص العام" : "سجل حصصي"} active={view === 'reports'} onClick={() => {setView('reports'); setSidebarOpen(false);}} />
                         </nav>
-                        <button onClick={() => setIsLoggedIn(false)} className="mt-auto flex items-center justify-center gap-3 text-red-400 p-4 hover:bg-white/10 rounded-2xl transition-all"><Icon name="LogOut" size={24} /> خروج</button>
+                        <button onClick={handleLogout} className="mt-auto flex items-center justify-center gap-3 text-red-400 p-4 hover:bg-white/10 rounded-2xl transition-all"><Icon name="LogOut" size={24} /> خروج</button>
                     </aside>
 
                     <main className="flex-1 p-4 md:p-12 overflow-y-auto w-full">
@@ -293,7 +331,9 @@
                             <h2 className="text-xl text-slate-800">{view}</h2>
                         </header>
 
-                        {/* لوحة التحكم الرئيسية */}
+                        {/* ========================================================================================= */}
+                        {/* 1. لوحة التحكم الرئيسية */}
+                        {/* ========================================================================================= */}
                         {view === 'dashboard' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="bg-white p-8 rounded-3xl shadow-lg border-t-8 border-royal-gold text-center">
@@ -309,7 +349,9 @@
                             </div>
                         )}
 
-                        {/* شاشة المعلمين */}
+                        {/* ========================================================================================= */}
+                        {/* 2. شاشة إدارة المعلمين */}
+                        {/* ========================================================================================= */}
                         {view === 'mgmt-teachers' && currentUserData.role === 'admin' && (
                             <div className="space-y-8 animate-fade-in">
                                 <div className={`bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] ${editingTeacher ? 'border-[#c5a044] bg-amber-50' : 'border-[#1a3a5f]'}`}>
@@ -319,7 +361,6 @@
                                         const f = e.target.elements;
                                         const cleanUsername = f.user.value.trim().toLowerCase();
                                         
-                                        // منع تكرار اسم المستخدم
                                         if (!editingTeacher && teachers.some(t => t.username === cleanUsername)) {
                                             showAlert('تنبيه: اسم المستخدم هذا موجود مسبقاً!', 'error'); return;
                                         }
@@ -365,7 +406,9 @@
                             </div>
                         )}
 
-                        {/* شاشة الطلاب */}
+                        {/* ========================================================================================= */}
+                        {/* 3. شاشة إدارة الطلاب (التي كانت مفقودة وقمنا باسترجاعها) */}
+                        {/* ========================================================================================= */}
                         {view === 'mgmt-students' && currentUserData.role === 'admin' && (
                             <div className="space-y-8 animate-fade-in">
                                 <div className={`bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] ${editingStudent ? 'border-[#c5a044] bg-amber-50' : 'border-[#1a3a5f]'}`}>
@@ -373,13 +416,9 @@
                                     <form key={editingStudent ? editingStudent.id : 'new'} className="flex flex-col md:flex-row gap-4" onSubmit={async (e) => {
                                         e.preventDefault();
                                         const name = e.target.name.value.trim();
-                                        
-                                        // منع تكرار اسم الطالب عند الإضافة
                                         if (!editingStudent && students.some(s => s.name === name)) {
-                                            showAlert('تنبيه: اسم الطالب مسجل مسبقاً!', 'error');
-                                            return;
+                                            showAlert('تنبيه: اسم الطالب مسجل مسبقاً!', 'error'); return;
                                         }
-
                                         const success = await dbOp('students', { name }, editingStudent?.id);
                                         if(success) { e.target.reset(); setEditingStudent(null); }
                                     }}>
@@ -412,7 +451,9 @@
                             </div>
                         )}
 
-                        {/* شاشة التنسيب */}
+                        {/* ========================================================================================= */}
+                        {/* 4. شاشة تنسيب الطلاب */}
+                        {/* ========================================================================================= */}
                         {view === 'assign' && currentUserData.role === 'admin' && (
                             <div className="space-y-8 animate-fade-in">
                                 <div className={`bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] ${editingAssignment ? 'border-[#c5a044] bg-amber-50' : 'border-[#1a3a5f]'}`}>
@@ -422,12 +463,10 @@
                                         const teacherId = e.target.teacherId.value;
                                         const studentId = e.target.studentId.value;
                                         
-                                        // حماية لمنع التنسيب المكرر
                                         if (!editingAssignment) {
                                             const isDuplicate = assignments.some(a => a.teacherId === teacherId && a.studentId === studentId);
                                             if (isDuplicate) {
-                                                showAlert('تنبيه: هذا الطالب منسوب بالفعل لهذا المعلم مسبقاً!', 'error');
-                                                return; 
+                                                showAlert('تنبيه: هذا الطالب منسوب بالفعل لهذا المعلم مسبقاً!', 'error'); return; 
                                             }
                                         }
 
@@ -469,7 +508,9 @@
                             </div>
                         )}
 
-                        {/* شاشة المعلم: تسجيل حصة مع القائمة المفلترة */}
+                        {/* ========================================================================================= */}
+                        {/* 5. شاشة تسجيل الحصص (للمعلم) */}
+                        {/* ========================================================================================= */}
                         {view === 'add-lesson' && currentUserData.role === 'teacher' && (
                             <div className="max-w-xl mx-auto bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] border-[#c5a044] animate-fade-in">
                                 <h3 className="text-2xl mb-8 text-[#1a3a5f] text-center flex items-center justify-center gap-2"><Icon name="PlusSquare" className="text-[#c5a044]" /> تسجيل حصة تعليمية</h3>
@@ -484,7 +525,6 @@
                                         <label className="block text-sm font-bold text-slate-500 mb-2">الطالب المنسوب لك</label>
                                         <select name="studentId" className="w-full clear-input bg-white" required>
                                             <option value="">-- اختر الطالب --</option>
-                                            {/* عرض قائمة الطلاب النظيفة من أي تكرار */}
                                             {uniqueStudentsForDropdown.map(student => (
                                                 <option key={student.id} value={student.id}>{student.name}</option>
                                             ))}
@@ -501,7 +541,9 @@
                             </div>
                         )}
 
-                        {/* سجل الحصص والتقارير */}
+                        {/* ========================================================================================= */}
+                        {/* 6. سجل الحصص والتقارير */}
+                        {/* ========================================================================================= */}
                         {view === 'reports' && (
                             <div className="bg-white rounded-3xl shadow-xl overflow-hidden border animate-fade-in">
                                 <div className="bg-[#1a3a5f] text-white p-6 border-b flex justify-between items-center">
@@ -528,7 +570,9 @@
                             </div>
                         )}
 
-                        {/* التقرير المالي */}
+                        {/* ========================================================================================= */}
+                        {/* 7. التقرير المالي */}
+                        {/* ========================================================================================= */}
                         {view === 'finance' && currentUserData.role === 'admin' && (
                             <div className="bg-white rounded-3xl shadow-xl overflow-hidden border animate-fade-in">
                                 <div className="p-6 bg-slate-50 border-b"><h3 className="text-xl font-black">التقرير المالي المستحق</h3></div>
