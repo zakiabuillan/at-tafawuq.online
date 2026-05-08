@@ -189,11 +189,20 @@
             const myLessons = lessons.filter(l => l.teacherId === currentUserData?.id);
             
             // =========================================================================================
-            //  الحل الأول: تصفية (فلترة) الطلاب المنسوبين للمعلم باستخدام Set لمنع التكرار في القائمة
+            //  المصفاة الذكية: منع تكرار أسماء الطلاب في القائمة المنسدلة للمعلم
             // =========================================================================================
             const myAssignedStudents = assignments.filter(a => a.teacherId === currentUserData?.id);
-            // نقوم باستخراج معرفات الطلاب (IDs) ووضعها في مصفاة Set لتبقى المعرفات الفريدة فقط
-            const uniqueStudentIds = [...new Set(myAssignedStudents.map(a => a.studentId))];
+            const uniqueStudentsForDropdown = [];
+            const seenStudentNames = new Set();
+            
+            myAssignedStudents.forEach(a => {
+                const studentName = getStudentName(a.studentId);
+                // نتأكد أن الاسم لم يظهر سابقاً وأنه ليس طالباً محذوفاً
+                if (!seenStudentNames.has(studentName) && studentName !== 'طالب محذوف') {
+                    seenStudentNames.add(studentName);
+                    uniqueStudentsForDropdown.push({ id: a.studentId, name: studentName });
+                }
+            });
             
             const totalAdminHours = lessons.reduce((sum, l) => sum + Number(l.hours) + (Number(l.mins) / 60), 0);
 
@@ -290,7 +299,7 @@
                                 <div className="bg-white p-8 rounded-3xl shadow-lg border-t-8 border-royal-gold text-center">
                                     <Icon name="Users" className="text-royal-gold mx-auto mb-2" size={40} />
                                     <p className="text-slate-400 text-sm">{currentUserData.role === 'admin' ? "إجمالي الطلاب" : "طلابك المنسوبين"}</p>
-                                    <p className="text-4xl text-royal-blue">{currentUserData.role === 'admin' ? students.length : uniqueStudentIds.length}</p>
+                                    <p className="text-4xl text-royal-blue">{currentUserData.role === 'admin' ? students.length : uniqueStudentsForDropdown.length}</p>
                                 </div>
                                 <div className="bg-white p-8 rounded-3xl shadow-lg border-t-8 border-royal-blue text-center">
                                     <Icon name="Clock" className="text-royal-blue mx-auto mb-2" size={40} />
@@ -309,6 +318,8 @@
                                         e.preventDefault();
                                         const f = e.target.elements;
                                         const cleanUsername = f.user.value.trim().toLowerCase();
+                                        
+                                        // منع تكرار اسم المستخدم
                                         if (!editingTeacher && teachers.some(t => t.username === cleanUsername)) {
                                             showAlert('تنبيه: اسم المستخدم هذا موجود مسبقاً!', 'error'); return;
                                         }
@@ -361,7 +372,15 @@
                                     <h3 className="text-2xl mb-6 text-[#1a3a5f] flex items-center gap-2"><Icon name={editingStudent ? "Edit" : "UserPlus"} className="text-[#c5a044]" /> {editingStudent ? "تعديل طالب" : "إضافة طالب"}</h3>
                                     <form key={editingStudent ? editingStudent.id : 'new'} className="flex flex-col md:flex-row gap-4" onSubmit={async (e) => {
                                         e.preventDefault();
-                                        const success = await dbOp('students', { name: e.target.name.value.trim() }, editingStudent?.id);
+                                        const name = e.target.name.value.trim();
+                                        
+                                        // منع تكرار اسم الطالب عند الإضافة
+                                        if (!editingStudent && students.some(s => s.name === name)) {
+                                            showAlert('تنبيه: اسم الطالب مسجل مسبقاً!', 'error');
+                                            return;
+                                        }
+
+                                        const success = await dbOp('students', { name }, editingStudent?.id);
                                         if(success) { e.target.reset(); setEditingStudent(null); }
                                     }}>
                                         <input name="name" defaultValue={editingStudent?.name || ''} placeholder="اسم الطالب" className="flex-1 clear-input" required />
@@ -403,14 +422,12 @@
                                         const teacherId = e.target.teacherId.value;
                                         const studentId = e.target.studentId.value;
                                         
-                                        // =========================================================================================
-                                        // الحل الثاني (الوقاية): التحقق من أن هذا التنسيب غير موجود مسبقاً لمنع تكراره في قاعدة البيانات
-                                        // =========================================================================================
+                                        // حماية لمنع التنسيب المكرر
                                         if (!editingAssignment) {
                                             const isDuplicate = assignments.some(a => a.teacherId === teacherId && a.studentId === studentId);
                                             if (isDuplicate) {
                                                 showAlert('تنبيه: هذا الطالب منسوب بالفعل لهذا المعلم مسبقاً!', 'error');
-                                                return; // نوقف التنفيذ هنا ولا نرسل البيانات
+                                                return; 
                                             }
                                         }
 
@@ -452,7 +469,7 @@
                             </div>
                         )}
 
-                        {/* شاشة المعلم: تسجيل حصة */}
+                        {/* شاشة المعلم: تسجيل حصة مع القائمة المفلترة */}
                         {view === 'add-lesson' && currentUserData.role === 'teacher' && (
                             <div className="max-w-xl mx-auto bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] border-[#c5a044] animate-fade-in">
                                 <h3 className="text-2xl mb-8 text-[#1a3a5f] text-center flex items-center justify-center gap-2"><Icon name="PlusSquare" className="text-[#c5a044]" /> تسجيل حصة تعليمية</h3>
@@ -467,9 +484,9 @@
                                         <label className="block text-sm font-bold text-slate-500 mb-2">الطالب المنسوب لك</label>
                                         <select name="studentId" className="w-full clear-input bg-white" required>
                                             <option value="">-- اختر الطالب --</option>
-                                            {/* نستخدم uniqueStudentIds التي قمنا بتنظيفها من التكرار باستخدام Set */}
-                                            {uniqueStudentIds.map(studentId => (
-                                                <option key={studentId} value={studentId}>{getStudentName(studentId)}</option>
+                                            {/* عرض قائمة الطلاب النظيفة من أي تكرار */}
+                                            {uniqueStudentsForDropdown.map(student => (
+                                                <option key={student.id} value={student.id}>{student.name}</option>
                                             ))}
                                         </select>
                                     </div>
