@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>أكاديمية التفوق - النظام الشامل والذكي</title>
+    <title>أكاديمية التفوق - النظام السحابي</title>
     
-    <!-- المكتبات البرمجية الأساسية -->
+    <!-- استدعاء المكتبات البرمجية الأساسية -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -48,23 +48,43 @@
 <body>
     <div id="root"></div>
 
+    <!-- ========================================================================= -->
+    <!-- منطقة تفعيل قاعدة البيانات (تم دمج مفاتيحك الحقيقية بنجاح) -->
+    <!-- ========================================================================= -->
     <script type="module">
+        // استدعاء الأدوات اللازمة من روابط الويب (CDN) بدلاً من بيئة Node
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
         import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // === مفاتيح FIREBASE ===
+        // مفاتيح مشروعك الحقيقية
         const firebaseConfig = {
-            // apiKey: "YOUR_KEY",
-            // projectId: "YOUR_PROJECT"
+            apiKey: "AIzaSyDwDJCLLIUWRY8rAhUDp7_20qOOd25CWLY",
+            authDomain: "at-tafawuq.firebaseapp.com",
+            projectId: "at-tafawuq",
+            storageBucket: "at-tafawuq.firebasestorage.app",
+            messagingSenderId: "622444320454",
+            appId: "1:622444320454:web:d6f148588d27d45b1c69c7",
+            measurementId: "G-3022QCSDWF"
         };
 
         try {
-            if(firebaseConfig.apiKey) {
-                const app = initializeApp(firebaseConfig);
-                const db = getFirestore(app);
-                window.fb = { db, doc, setDoc, collection, onSnapshot, deleteDoc };
-            }
-        } catch (error) { console.error("Firebase Init Error"); }
+            // تشغيل تطبيق Firebase
+            const app = initializeApp(firebaseConfig);
+            
+            // تشغيل إحصاءات جوجل لتتبع الزوار
+            const analytics = getAnalytics(app);
+            
+            // تشغيل قاعدة البيانات (Firestore)
+            const db = getFirestore(app);
+            
+            // حفظ الأدوات في نافذة المتصفح لكي يستخدمها كود الواجهة (React)
+            window.fb = { db, doc, setDoc, collection, onSnapshot, deleteDoc };
+            
+            console.log("تم الاتصال بنجاح بسحابة أكاديمية التفوق!");
+        } catch (error) { 
+            console.error("خطأ في تشغيل Firebase:", error); 
+        }
     </script>
 
     <script type="text/babel">
@@ -100,86 +120,89 @@
         );
 
         const App = () => {
-            const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('tafawuq_session_v4'));
+            const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('tafawuq_session_v5'));
             const [currentUserData, setCurrentUserData] = useState(() => {
-                const saved = localStorage.getItem('tafawuq_session_v4');
+                const saved = localStorage.getItem('tafawuq_session_v5');
                 return saved ? JSON.parse(saved) : null;
             });
 
             const [view, setView] = useState('dashboard');
             const [isSidebarOpen, setSidebarOpen] = useState(false);
             const [alert, setAlert] = useState({ show: false, msg: '', type: 'success' });
+            const [isSyncing, setIsSyncing] = useState(true);
             
-            const [teachers, setTeachers] = useState(() => JSON.parse(localStorage.getItem('db_teachers_v4')) || []);
-            const [students, setStudents] = useState(() => JSON.parse(localStorage.getItem('db_students_v4')) || []);
-            const [assignments, setAssignments] = useState(() => JSON.parse(localStorage.getItem('db_assignments_v4')) || []);
-            const [lessons, setLessons] = useState(() => JSON.parse(localStorage.getItem('db_lessons_v4')) || []);
+            const [teachers, setTeachers] = useState([]);
+            const [students, setStudents] = useState([]);
+            const [assignments, setAssignments] = useState([]);
+            const [lessons, setLessons] = useState([]);
             
-            useEffect(() => { localStorage.setItem('db_teachers_v4', JSON.stringify(teachers)); }, [teachers]);
-            useEffect(() => { localStorage.setItem('db_students_v4', JSON.stringify(students)); }, [students]);
-            useEffect(() => { localStorage.setItem('db_assignments_v4', JSON.stringify(assignments)); }, [assignments]);
-            useEffect(() => { localStorage.setItem('db_lessons_v4', JSON.stringify(lessons)); }, [lessons]);
+            // المزامنة التلقائية مع قاعدة بياناتك السحابية
+            useEffect(() => {
+                if (window.fb && window.fb.db) {
+                    const { db, collection, onSnapshot } = window.fb;
+                    const syncData = (collectionName, setterFunction) => {
+                        const colRef = collection(db, collectionName);
+                        return onSnapshot(colRef, (snapshot) => {
+                            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                            setterFunction(data);
+                            setIsSyncing(false);
+                        });
+                    };
+                    const unsubTeachers = syncData('teachers', setTeachers);
+                    const unsubStudents = syncData('students', setStudents);
+                    const unsubAssignments = syncData('assignments', setAssignments);
+                    const unsubLessons = syncData('lessons', setLessons);
+
+                    return () => { unsubTeachers(); unsubStudents(); unsubAssignments(); unsubLessons(); };
+                } else {
+                    setTimeout(() => setIsSyncing(false), 2000);
+                }
+            }, []);
+
+            const dbOp = async (collectionName, data, documentId = null) => {
+                const id = documentId || Date.now().toString(); 
+                
+                // التحديث المحلي
+                if (data === null) {
+                    if(collectionName==='teachers') setTeachers(teachers.filter(x=>x.id!==id));
+                    if(collectionName==='students') setStudents(students.filter(x=>x.id!==id));
+                    if(collectionName==='assignments') setAssignments(assignments.filter(x=>x.id!==id));
+                    if(collectionName==='lessons') setLessons(lessons.filter(x=>x.id!==id));
+                } else {
+                    const newItem = { id, ...data };
+                    if(collectionName==='teachers') setTeachers(documentId ? teachers.map(x=>x.id===id?newItem:x) : [...teachers, newItem]);
+                    if(collectionName==='students') setStudents(documentId ? students.map(x=>x.id===id?newItem:x) : [...students, newItem]);
+                    if(collectionName==='assignments') setAssignments(documentId ? assignments.map(x=>x.id===id?newItem:x) : [...assignments, newItem]);
+                    if(collectionName==='lessons') setLessons(documentId ? lessons.map(x=>x.id===id?newItem:x) : [...lessons, newItem]);
+                }
+
+                // الرفع للسحابة الحقيقية
+                if (window.fb && window.fb.db) {
+                    try {
+                        const { db, doc, setDoc, deleteDoc } = window.fb;
+                        const docRef = doc(db, collectionName, id);
+                        if (data === null) {
+                            await deleteDoc(docRef);
+                            showAlert('تم الحذف بنجاح!');
+                        } else {
+                            await setDoc(docRef, data, { merge: true });
+                            showAlert('تم حفظ البيانات بنجاح!');
+                        }
+                    } catch(e) { 
+                        console.error("Cloud Sync Failed", e); 
+                        showAlert('حدث خطأ في الاتصال بالسحابة', 'error');
+                    }
+                }
+                return true;
+            };
 
             const [loginForm, setLoginForm] = useState({ user: '', pass: '' });
             const [showPassword, setShowPassword] = useState(false);
             const [rememberMe, setRememberMe] = useState(true); 
 
-            // حالات المساعد الذكي
-            const [aiInput, setAiInput] = useState('');
-            const [aiResponse, setAiResponse] = useState('');
-            const [isAiLoading, setIsAiLoading] = useState(false);
-
-            // =========================================================================
-            // دالة الاتصال بنموذج Gemini (مترجمة من بايثون إلى جافا سكريبت)
-            // =========================================================================
-            const askGemini = async (e) => {
-                e.preventDefault();
-                if(!aiInput.trim()) return;
-                
-                setIsAiLoading(true);
-                setAiResponse('');
-                
-                // === ضع مفتاح API الخاص بـ Gemini هنا ===
-                const GEMINI_API_KEY = "ضع_مفتاح_GEMINI_هنا"; 
-                // ==========================================
-
-                if (GEMINI_API_KEY === "ضع_مفتاح_GEMINI_هنا") {
-                    setAiResponse("تنبيه: يرجى وضع مفتاح GEMINI_API_KEY الخاص بك في الكود أولاً لكي يعمل المساعد الذكي.");
-                    setIsAiLoading(false);
-                    return;
-                }
-
-                // تجهيز الرابط والبيانات كما طلبت (gemini-3-flash-preview)
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
-                
-                // بناء الطلب (Payload) ليطابق الكود الذي أرسلته (يحتوي على أداة بحث جوجل)
-                const payload = {
-                    contents: [{ role: "user", parts: [{ text: aiInput }] }],
-                    tools: [{ googleSearch: {} }]
-                };
-
-                try {
-                    const response = await fetch(url, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.candidates && data.candidates.length > 0) {
-                        setAiResponse(data.candidates[0].content.parts[0].text);
-                    } else {
-                        setAiResponse("عذراً، لم أتمكن من استخراج إجابة.");
-                    }
-                } catch (error) {
-                    console.error(error);
-                    setAiResponse("حدث خطأ أثناء الاتصال بالخادم. تأكد من صحة المفتاح واتصال الإنترنت.");
-                }
-                
-                setIsAiLoading(false);
-                setAiInput('');
-            };
+            const [editingTeacher, setEditingTeacher] = useState(null);
+            const [editingStudent, setEditingStudent] = useState(null);
+            const [editingAssignment, setEditingAssignment] = useState(null);
 
             const showAlert = (msg, type = 'success') => {
                 setAlert({ show: true, msg, type });
@@ -189,7 +212,7 @@
             const handleLogout = () => {
                 setIsLoggedIn(false);
                 setCurrentUserData(null);
-                localStorage.removeItem('tafawuq_session_v4'); 
+                localStorage.removeItem('tafawuq_session_v5'); 
             };
 
             const getStudentName = (id) => students.find(s => s.id === id)?.name || 'طالب غير متوفر';
@@ -211,6 +234,15 @@
             
             const totalAdminHours = lessons.reduce((sum, l) => sum + Number(l.hours) + (Number(l.mins) / 60), 0);
 
+            if (isSyncing) {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center bg-[#1a3a5f] text-white font-black">
+                        <Icon name="Cloud" size={60} className="text-[#c5a044] mb-4 animate-pulse" />
+                        <div className="text-xl tracking-widest uppercase">جاري الاتصال بقاعدة البيانات السحابية...</div>
+                    </div>
+                );
+            }
+
             if (!isLoggedIn) {
                 return (
                     <div className="min-h-screen flex items-center justify-center p-4 login-page-bg text-right font-black">
@@ -219,7 +251,7 @@
                             <div className="text-center mb-8">
                                 <Icon name="GraduationCap" size={50} className="mx-auto text-royal-gold mb-2" />
                                 <h1 className="text-3xl font-black text-royal-blue tracking-tight uppercase">أكاديمية التفوق</h1>
-                                <p className="text-slate-500 text-xs font-black uppercase mt-2">تسجيل الدخول للنظام</p>
+                                <p className="text-slate-500 text-xs font-black uppercase mt-2">تسجيل الدخول للنظام السحابي</p>
                             </div>
 
                             <form onSubmit={(e) => {
@@ -239,7 +271,7 @@
                                     setIsLoggedIn(true); 
                                     setCurrentUserData(validUser);
                                     if (rememberMe) {
-                                        localStorage.setItem('tafawuq_session_v4', JSON.stringify(validUser));
+                                        localStorage.setItem('tafawuq_session_v5', JSON.stringify(validUser));
                                     }
                                 } else {
                                     showAlert('اسم المستخدم أو كلمة المرور غير صحيحة', 'error');
@@ -278,20 +310,15 @@
                         <div className="mb-10 text-center border-b border-white/10 pb-6"><h2 className="text-xl text-[#c5a044]">أكاديمية التفوق</h2><p className="text-xs text-slate-300 mt-2">{currentUserData.name}</p></div>
                         <nav className="flex-1 space-y-2 overflow-y-auto">
                             <NavItem icon="LayoutDashboard" label="الرئيسية" active={view === 'dashboard'} onClick={() => {setView('dashboard'); setSidebarOpen(false);}} />
-                            
-                            {/* إضافة زر المساعد الذكي */}
-                            <NavItem icon="Bot" label="المساعد الذكي (Gemini)" active={view === 'ai'} onClick={() => {setView('ai'); setSidebarOpen(false);}} />
-                            
                             {currentUserData.role === 'admin' && (
                                 <>
-                                    <NavItem icon="UserPlus" label="إدارة المعلمين" active={view === 'mgmt-teachers'} onClick={() => {setView('mgmt-teachers'); setSidebarOpen(false);}} />
-                                    <NavItem icon="Users" label="تسجيل الطلاب" active={view === 'mgmt-students'} onClick={() => {setView('mgmt-students'); setSidebarOpen(false);}} />
-                                    <NavItem icon="Link" label="تنسيب الطلاب" active={view === 'assign'} onClick={() => {setView('assign'); setSidebarOpen(false);}} />
+                                    <NavItem icon="UserPlus" label="إدارة المعلمين" active={view === 'mgmt-teachers'} onClick={() => {setView('mgmt-teachers'); setEditingTeacher(null); setSidebarOpen(false);}} />
+                                    <NavItem icon="Users" label="تسجيل الطلاب" active={view === 'mgmt-students'} onClick={() => {setView('mgmt-students'); setEditingStudent(null); setSidebarOpen(false);}} />
+                                    <NavItem icon="Link" label="تنسيب الطلاب" active={view === 'assign'} onClick={() => {setView('assign'); setEditingAssignment(null); setSidebarOpen(false);}} />
                                     <NavItem icon="FileText" label="سجل الحصص العام" active={view === 'reports'} onClick={() => {setView('reports'); setSidebarOpen(false);}} />
                                     <NavItem icon="PieChart" label="التقارير المالية" active={view === 'finance'} onClick={() => {setView('finance'); setSidebarOpen(false);}} />
                                 </>
                             )}
-
                             {currentUserData.role === 'teacher' && (
                                 <>
                                     <NavItem icon="PlusSquare" label="تسجيل حصة تعليمية" active={view === 'add-lesson'} onClick={() => {setView('add-lesson'); setSidebarOpen(false);}} />
@@ -308,7 +335,6 @@
                             <h2 className="text-xl text-slate-800">{view}</h2>
                         </header>
 
-                        {/* --- الواجهة: الرئيسية --- */}
                         {view === 'dashboard' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="bg-white p-8 rounded-3xl shadow-lg border-t-8 border-royal-gold text-center">
@@ -324,51 +350,248 @@
                             </div>
                         )}
 
-                        {/* --- الواجهة الجديدة: المساعد الذكي (Gemini) --- */}
-                        {view === 'ai' && (
-                            <div className="animate-fade-in flex flex-col h-[80vh] bg-white rounded-[2rem] shadow-xl border-t-[8px] border-[#1a3a5f] p-8">
-                                <h3 className="text-2xl mb-6 text-[#1a3a5f] flex items-center gap-2"><Icon name="Bot" className="text-[#c5a044]" /> المساعد الذكي - Gemini 3 Flash</h3>
-                                
-                                <div className="flex-1 bg-slate-50 rounded-2xl p-6 mb-4 overflow-y-auto border border-slate-200 text-right leading-relaxed normal-case" dir="rtl">
-                                    {aiResponse ? (
-                                        <div className="text-slate-800 text-lg whitespace-pre-wrap">{aiResponse}</div>
-                                    ) : (
-                                        <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-50">
-                                            <Icon name="MessageSquare" size={60} className="mb-4" />
-                                            <p>أنا المساعد الذكي للأكاديمية، تفضل بطرح سؤالك...</p>
+                        {view === 'mgmt-teachers' && currentUserData.role === 'admin' && (
+                            <div className="space-y-8 animate-fade-in">
+                                <div className={`bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] ${editingTeacher ? 'border-[#c5a044] bg-amber-50' : 'border-[#1a3a5f]'}`}>
+                                    <h3 className="text-2xl mb-6 text-[#1a3a5f] flex items-center gap-2"><Icon name={editingTeacher ? "Edit" : "UserPlus"} className="text-[#c5a044]" /> {editingTeacher ? "تعديل المعلم" : "إضافة معلم جديد"}</h3>
+                                    <form key={editingTeacher ? editingTeacher.id : 'new'} className="space-y-4" onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const f = e.target.elements;
+                                        const cleanUsername = f.user.value.trim().toLowerCase();
+                                        
+                                        if (!editingTeacher && teachers.some(t => t.username === cleanUsername)) {
+                                            showAlert('تنبيه: اسم المستخدم هذا موجود مسبقاً!', 'error'); return;
+                                        }
+                                        const teacherData = { name: f.name.value.trim(), rate: parseFloat(f.rate.value), username: cleanUsername, password: f.pass.value.trim() };
+                                        dbOp('teachers', teacherData, editingTeacher?.id).then(() => {
+                                            e.target.reset(); setEditingTeacher(null);
+                                        });
+                                    }}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <input name="name" defaultValue={editingTeacher?.name || ''} placeholder="الاسم الرباعي للمعلم" className="w-full clear-input" required />
+                                            <input name="rate" type="number" defaultValue={editingTeacher?.rate || ''} placeholder="أجر الساعة (₪)" className="w-full clear-input en-input" required />
+                                            <input name="user" defaultValue={editingTeacher?.username || ''} placeholder="اسم المستخدم (إنجليزي)" className="w-full clear-input en-input" autocapitalize="none" autocomplete="off" autocorrect="off" required />
+                                            <input name="pass" type="text" defaultValue={editingTeacher?.password || ''} placeholder="كلمة المرور" className="w-full clear-input en-input" autocapitalize="none" autocomplete="off" autocorrect="off" required />
                                         </div>
-                                    )}
+                                        <div className="flex gap-4 mt-4">
+                                            <button className="flex-1 btn-gold py-4 rounded-xl text-lg">{editingTeacher ? "حفظ التعديلات" : "إضافة المعلم"}</button>
+                                            {editingTeacher && <button type="button" onClick={() => setEditingTeacher(null)} className="px-8 bg-slate-200 text-slate-700 rounded-xl">إلغاء</button>}
+                                        </div>
+                                    </form>
                                 </div>
 
-                                <form onSubmit={askGemini} className="flex gap-4">
-                                    <input 
-                                        type="text" 
-                                        value={aiInput} 
-                                        onChange={e => setAiInput(e.target.value)} 
-                                        placeholder="اكتب رسالتك أو سؤالك هنا..." 
-                                        className="flex-1 clear-input" 
-                                        disabled={isAiLoading}
-                                        required 
-                                    />
-                                    <button 
-                                        type="submit" 
-                                        disabled={isAiLoading}
-                                        className="btn-main px-8 rounded-xl text-lg flex items-center justify-center gap-2 disabled:opacity-50"
-                                    >
-                                        {isAiLoading ? <span className="animate-pulse">جاري التفكير...</span> : <><Icon name="Send" size={20} /> إرسال</>}
-                                    </button>
+                                <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
+                                    <div className="p-6 bg-slate-50 border-b"><h3 className="text-xl font-black">قائمة المعلمين</h3></div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-right">
+                                            <thead className="bg-slate-100 border-b"><tr><th className="p-4">الاسم</th><th className="p-4">User/Pass</th><th className="p-4 text-center">أجر الساعة</th><th className="p-4 text-center">إجراء</th></tr></thead>
+                                            <tbody>
+                                                {teachers.map(t => (
+                                                    <tr key={t.id} className="border-b hover:bg-slate-50">
+                                                        <td className="p-4 font-bold">{t.name}</td>
+                                                        <td className="p-4 text-slate-500 en-input">{t.username} / {t.password}</td>
+                                                        <td className="p-4 text-center font-bold text-[#c5a044]">{t.rate} ₪</td>
+                                                        <td className="p-4 text-center flex justify-center gap-3">
+                                                            <button onClick={() => { setEditingTeacher(t); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-blue-500 hover:text-blue-700"><Icon name="Edit" size={20} /></button>
+                                                            <button onClick={() => { if(confirm('حذف المعلم نهائياً؟')) dbOp('teachers', null, t.id); }} className="text-red-500 hover:text-red-700"><Icon name="Trash2" size={20} /></button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {teachers.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-slate-400">لا يوجد معلمون مسجلون</td></tr>}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'mgmt-students' && currentUserData.role === 'admin' && (
+                            <div className="space-y-8 animate-fade-in">
+                                <div className={`bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] ${editingStudent ? 'border-[#c5a044] bg-amber-50' : 'border-[#1a3a5f]'}`}>
+                                    <h3 className="text-2xl mb-6 text-[#1a3a5f] flex items-center gap-2"><Icon name={editingStudent ? "Edit" : "UserPlus"} className="text-[#c5a044]" /> {editingStudent ? "تعديل بيانات طالب" : "تسجيل طالب جديد"}</h3>
+                                    <form key={editingStudent ? editingStudent.id : 'new'} className="flex flex-col md:flex-row gap-4" onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const name = e.target.name.value.trim();
+                                        if (!editingStudent && students.some(s => s.name === name)) {
+                                            showAlert('تنبيه: اسم الطالب مسجل مسبقاً!', 'error'); return;
+                                        }
+                                        dbOp('students', { name }, editingStudent?.id).then(() => {
+                                            e.target.reset(); setEditingStudent(null);
+                                        });
+                                    }}>
+                                        <input name="name" defaultValue={editingStudent?.name || ''} placeholder="الاسم الرباعي للطالب" className="flex-1 clear-input" required />
+                                        <button className="btn-gold px-8 py-4 rounded-xl text-lg w-full md:w-auto">{editingStudent ? "حفظ التعديل" : "تسجيل الطالب"}</button>
+                                        {editingStudent && <button type="button" onClick={() => setEditingStudent(null)} className="px-8 bg-slate-200 text-slate-700 rounded-xl mt-2 md:mt-0">إلغاء</button>}
+                                    </form>
+                                </div>
+
+                                <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
+                                    <div className="p-6 bg-slate-50 border-b"><h3 className="text-xl font-black">الطلاب المسجلون في الأكاديمية</h3></div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-right">
+                                            <thead className="bg-slate-100 border-b"><tr><th className="p-4">اسم الطالب</th><th className="p-4 text-center">إجراءات</th></tr></thead>
+                                            <tbody>
+                                                {students.map(s => (
+                                                    <tr key={s.id} className="border-b hover:bg-slate-50">
+                                                        <td className="p-4 font-bold">{s.name}</td>
+                                                        <td className="p-4 text-center flex justify-center gap-3">
+                                                            <button onClick={() => { setEditingStudent(s); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-blue-500"><Icon name="Edit" size={20} /></button>
+                                                            <button onClick={() => { if(confirm('حذف هذا الطالب؟')) dbOp('students', null, s.id); }} className="text-red-500"><Icon name="Trash2" size={20} /></button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {students.length === 0 && <tr><td colSpan="2" className="p-8 text-center text-slate-400">لا يوجد طلاب مسجلون</td></tr>}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'assign' && currentUserData.role === 'admin' && (
+                            <div className="space-y-8 animate-fade-in">
+                                <div className={`bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] ${editingAssignment ? 'border-[#c5a044] bg-amber-50' : 'border-[#1a3a5f]'}`}>
+                                    <h3 className="text-2xl mb-6 text-[#1a3a5f] flex items-center gap-2"><Icon name="Link" className="text-[#c5a044]" /> {editingAssignment ? "تعديل التنسيب" : "تنسيب طالب لمعلم"}</h3>
+                                    <form key={editingAssignment ? editingAssignment.id : 'new'} className="space-y-4" onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const teacherId = e.target.teacherId.value;
+                                        const studentId = e.target.studentId.value;
+                                        
+                                        if (!editingAssignment) {
+                                            const isDuplicate = assignments.some(a => a.teacherId === teacherId && a.studentId === studentId);
+                                            if (isDuplicate) {
+                                                showAlert('هذا الطالب منسوب بالفعل لهذا المعلم مسبقاً!', 'error'); return; 
+                                            }
+                                        }
+
+                                        dbOp('assignments', { teacherId, studentId }, editingAssignment?.id).then(() => {
+                                            setEditingAssignment(null);
+                                        });
+                                    }}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <select name="teacherId" defaultValue={editingAssignment?.teacherId || ''} className="w-full clear-input bg-white" required><option value="">-- اختر المعلم --</option>{teachers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select>
+                                            <select name="studentId" defaultValue={editingAssignment?.studentId || ''} className="w-full clear-input bg-white" required><option value="">-- اختر الطالب --</option>{students.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
+                                        </div>
+                                        <div className="flex gap-4 mt-4">
+                                            <button className="flex-1 btn-gold py-4 rounded-xl text-lg">{editingAssignment ? "حفظ التعديلات" : "إتمام التنسيب"}</button>
+                                            {editingAssignment && <button type="button" onClick={() => setEditingAssignment(null)} className="px-8 bg-slate-200 text-slate-700 rounded-xl">إلغاء</button>}
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
+                                    <div className="p-6 bg-slate-50 border-b"><h3 className="text-xl font-black">جدول التنسيبات الحالية</h3></div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-right">
+                                            <thead className="bg-slate-100 border-b"><tr><th className="p-4">المعلم المكلّف</th><th className="p-4">الطالب المنسوب</th><th className="p-4 text-center">إجراء</th></tr></thead>
+                                            <tbody>
+                                                {assignments.map(a => (
+                                                    <tr key={a.id} className="border-b hover:bg-slate-50">
+                                                        <td className="p-4 font-bold text-[#1a3a5f]">{getTeacherName(a.teacherId)}</td>
+                                                        <td className="p-4">{getStudentName(a.studentId)}</td>
+                                                        <td className="p-4 text-center flex justify-center gap-3">
+                                                            <button onClick={() => { setEditingAssignment(a); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-blue-500"><Icon name="Edit" size={20} /></button>
+                                                            <button onClick={() => { if(confirm('هل تريد إلغاء تنسيب الطالب؟')) dbOp('assignments', null, a.id); }} className="text-red-500"><Icon name="Trash2" size={20} /></button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {assignments.length === 0 && <tr><td colSpan="3" className="p-8 text-center text-slate-400">لا يوجد بيانات تنسيب</td></tr>}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'add-lesson' && currentUserData.role === 'teacher' && (
+                            <div className="max-w-xl mx-auto bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] border-[#c5a044] animate-fade-in">
+                                <h3 className="text-2xl mb-8 text-[#1a3a5f] text-center flex items-center justify-center gap-2"><Icon name="PlusSquare" className="text-[#c5a044]" /> تسجيل حصة تعليمية</h3>
+                                <form className="space-y-5" onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const f = e.target.elements;
+                                    dbOp('lessons', { 
+                                        teacherId: currentUserData.id, 
+                                        studentId: f.studentId.value, 
+                                        subject: f.subject.value, 
+                                        hours: Number(f.hours.value), 
+                                        mins: Number(f.mins.value), 
+                                        date: f.date.value 
+                                    }).then(() => {
+                                        e.target.reset(); setView('reports'); 
+                                    });
+                                }}>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-500 mb-2">الطالب المنسوب لك</label>
+                                        <select name="studentId" className="w-full clear-input bg-white" required>
+                                            <option value="">-- اختر الطالب --</option>
+                                            {uniqueStudentsForDropdown.map(student => (
+                                                <option key={student.id} value={student.id}>{student.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div><label className="block text-sm font-bold text-slate-500 mb-2">المادة الدراسية</label><input name="subject" className="w-full clear-input" required /></div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div><label className="block text-sm font-bold text-slate-500 mb-2 text-center">ساعات</label><input name="hours" type="number" min="0" className="w-full clear-input text-center text-xl font-bold" defaultValue="0" required /></div>
+                                        <div><label className="block text-sm font-bold text-slate-500 mb-2 text-center">دقائق</label><input name="mins" type="number" min="0" max="59" className="w-full clear-input text-center text-xl font-bold" defaultValue="0" required /></div>
+                                    </div>
+                                    <div><label className="block text-sm font-bold text-slate-500 mb-2">تاريخ الحصة</label><input name="date" type="date" className="w-full clear-input text-center" defaultValue={new Date().toISOString().split('T')[0]} required /></div>
+                                    <button className="w-full btn-gold py-5 rounded-2xl text-xl mt-4">إرسال واعتماد الحصة</button>
                                 </form>
                             </div>
                         )}
 
-                        {/* بقية الواجهات (إدارة المعلمين، الطلاب، التنسيب، الحصص، التقارير) تعمل كالسابق تماماً... */}
-                        {view === 'mgmt-teachers' && ( <div className="p-8 text-center text-slate-500">واجهة إدارة المعلمين (تعمل بنفس الكفاءة السابقة)</div> )}
-                        {view === 'mgmt-students' && ( <div className="p-8 text-center text-slate-500">واجهة إدارة الطلاب (تعمل بنفس الكفاءة السابقة)</div> )}
-                        {view === 'assign' && ( <div className="p-8 text-center text-slate-500">واجهة تنسيب الطلاب (تعمل بنفس الكفاءة السابقة)</div> )}
-                        {view === 'add-lesson' && ( <div className="p-8 text-center text-slate-500">واجهة تسجيل حصة (تعمل بنفس الكفاءة السابقة)</div> )}
-                        {view === 'reports' && ( <div className="p-8 text-center text-slate-500">واجهة السجلات (تعمل بنفس الكفاءة السابقة)</div> )}
-                        {view === 'finance' && ( <div className="p-8 text-center text-slate-500">واجهة التقارير (تعمل بنفس الكفاءة السابقة)</div> )}
-                        
+                        {view === 'reports' && (
+                            <div className="bg-white rounded-3xl shadow-xl overflow-hidden border animate-fade-in">
+                                <div className="bg-[#1a3a5f] text-white p-6 border-b flex justify-between items-center">
+                                    <h3 className="text-xl font-black flex items-center gap-2"><Icon name="FileText" className="text-[#c5a044]"/>{currentUserData.role === 'admin' ? 'سجل الحصص العام للمنصة' : 'سجل حصصك الخاص'}</h3>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-right text-sm">
+                                        <thead className="bg-slate-100 border-b"><tr><th className="p-4">التاريخ</th>{currentUserData.role === 'admin' && <th className="p-4">المعلم</th>}<th className="p-4">الطالب</th><th className="p-4">المادة</th><th className="p-4 text-center">المدة</th>{currentUserData.role === 'admin' && <th className="p-4 text-center">إجراء</th>}</tr></thead>
+                                        <tbody>
+                                            {sortedLessons.filter(l => currentUserData.role === 'admin' || l.teacherId === currentUserData.id).map(l => (
+                                                <tr key={l.id} className="border-b hover:bg-slate-50">
+                                                    <td className="p-4 text-slate-500 font-bold" dir="ltr">{l.date}</td>
+                                                    {currentUserData.role === 'admin' && <td className="p-4 font-bold text-[#1a3a5f]">{getTeacherName(l.teacherId)}</td>}
+                                                    <td className="p-4">{getStudentName(l.studentId)}</td>
+                                                    <td className="p-4">{l.subject}</td>
+                                                    <td className="p-4 text-center font-bold text-blue-700">{l.hours}س و {l.mins}د</td>
+                                                    {currentUserData.role === 'admin' && <td className="p-4 text-center"><button onClick={() => { if(confirm('هل تريد حذف هذه الحصة؟')) dbOp('lessons', null, l.id); }} className="text-red-500"><Icon name="Trash2" size={18} /></button></td>}
+                                                </tr>
+                                            ))}
+                                            {sortedLessons.length === 0 && <tr><td colSpan="6" className="p-8 text-center text-slate-400">لا توجد حصص مسجلة حتى الآن</td></tr>}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'finance' && currentUserData.role === 'admin' && (
+                            <div className="bg-white rounded-3xl shadow-xl overflow-hidden border animate-fade-in">
+                                <div className="p-6 bg-slate-50 border-b"><h3 className="text-xl font-black">التقرير المالي (مستحقات المعلمين)</h3></div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-right">
+                                        <thead className="bg-slate-100 border-b"><tr><th className="p-4">اسم المعلم</th><th className="p-4 text-center">أجر الساعة</th><th className="p-4 text-center">إجمالي الساعات</th><th className="p-4 text-left">المبلغ المستحق</th></tr></thead>
+                                        <tbody>
+                                            {teachers.map(t => {
+                                                const tLessons = lessons.filter(l => l.teacherId === t.id);
+                                                const tHours = tLessons.reduce((sum, l) => sum + Number(l.hours) + (Number(l.mins) / 60), 0);
+                                                const tPayout = Math.round(tHours * (t.rate || 0));
+                                                return (
+                                                    <tr key={t.id} className="border-b hover:bg-slate-50">
+                                                        <td className="p-4 font-bold text-lg">{t.name}</td>
+                                                        <td className="p-4 text-center">{t.rate || 0} ₪</td>
+                                                        <td className="p-4 text-center font-bold" dir="ltr">{tHours.toFixed(2)}</td>
+                                                        <td className="p-4 text-left font-black text-[#c5a044] text-xl">{tPayout} ₪</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                            {teachers.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-slate-400">لا يوجد معلمون مسجلون</td></tr>}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
                     </main>
                 </div>
             );
