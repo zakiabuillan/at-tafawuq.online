@@ -14,33 +14,25 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     
-    <!-- تنسيقات التصميم الجمالية -->
     <style>
         :root { --primary: #1a3a5f; --gold: #c5a044; --bg: #f8fafc; }
         body { font-family: 'Cairo', sans-serif; background-color: var(--bg); color: #1e293b; margin: 0; }
-        
         .royal-blue { background-color: var(--primary) !important; }
         .royal-gold { background-color: var(--gold) !important; }
         .text-royal-blue { color: var(--primary) !important; }
         .text-royal-gold { color: var(--gold) !important; }
-        
         aside { background-color: var(--primary) !important; color: white !important; box-shadow: -10px 0 40px rgba(0,0,0,0.3); }
         .sidebar-item-active { background-color: var(--gold) !important; color: var(--primary) !important; font-weight: 900 !important; }
-        
         .login-page-bg { background-color: #f1f5f9; }
         .login-page-overlay { background: rgba(241, 245, 249, 0.96); position: absolute; inset: 0; z-index: 1; }
         .login-card { position: relative; z-index: 10; background: #ffffff; border: 3px solid var(--primary); box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.35); border-radius: 2.5rem; }
-
         .clear-input { border: 2px solid var(--primary) !important; color: #000000 !important; font-weight: 800 !important; background: #ffffff !important; border-radius: 1rem !important; outline: none; transition: all 0.3s;}
         .clear-input:focus { box-shadow: 0 0 0 3px rgba(197, 160, 68, 0.5) !important; }
         .en-input { direction: ltr !important; text-align: left !important; }
-
         .alert-toast { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); z-index: 3000; animation: slideDown 0.5s ease-out; }
         @keyframes slideDown { from { top: -100px; opacity: 0; } to { top: 25px; opacity: 1; } }
-
         .btn-gold { background-color: var(--gold) !important; color: var(--primary) !important; font-weight: 900 !important; border-radius: 1rem; transition: all 0.3s; }
         .btn-gold:hover { opacity: 0.9; transform: translateY(-2px); }
-        
         .table-container { overflow-x: auto; border-radius: 1rem; border: 1px solid #e2e8f0; }
         .animate-fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -49,10 +41,43 @@
 <body>
     <div id="root"></div>
 
+    <!-- ========================================================= -->
+    <!-- 1. الاتصال بقاعدة البيانات (بشكل معزول لمنع السباق) -->
+    <!-- ========================================================= -->
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // مفاتيحك الحقيقية التي أرسلتها
+        const firebaseConfig = {
+            apiKey: "AIzaSyDwDJCLLIUWRY8rAhUDp7_20qOOd25CWLY",
+            authDomain: "at-tafawuq.firebaseapp.com",
+            projectId: "at-tafawuq",
+            storageBucket: "at-tafawuq.firebasestorage.app",
+            messagingSenderId: "622444320454",
+            appId: "1:622444320454:web:d6f148588d27d45b1c69c7"
+        };
+
+        try {
+            // التحقق الذكي: إذا كانت Firebase تعمل مسبقاً، نستخدمها، وإلا نقوم بتشغيلها
+            const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+            const db = getFirestore(app);
+            
+            // رفع الأدوات لتصبح متاحة للواجهة
+            window.fb = { db, doc, setDoc, collection, onSnapshot, deleteDoc };
+            window.firebaseError = null;
+        } catch (error) {
+            console.error("Firebase Error:", error);
+            window.firebaseError = error;
+        }
+    </script>
+
+    <!-- ========================================================= -->
+    <!-- 2. واجهة النظام وتطبيق React -->
+    <!-- ========================================================= -->
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // مكوّن لإنشاء ورسم الأيقونات
         const Icon = ({ name, size = 32, className = "" }) => {
             const iconRef = useRef(null);
             useEffect(() => {
@@ -75,7 +100,6 @@
             return <span ref={iconRef} className={`inline-flex items-center justify-center ${className}`} style={{width: size, height: size}}></span>;
         };
 
-        // مكوّن عناصر القائمة الجانبية
         const NavItem = ({ icon, label, active, onClick }) => (
             <button onClick={onClick} className={`w-full text-right p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 ${active ? 'sidebar-item-active shadow-xl' : 'hover:bg-white/10 text-white/80 font-bold'}`}>
                 <Icon name={icon} size={26} className={active ? 'text-[#1a3a5f]' : 'text-[#c5a044]'} />
@@ -83,85 +107,67 @@
             </button>
         );
 
-        // التطبيق الرئيسي
         const App = () => {
-            // بيانات الجلسة (تسجيل الدخول)
-            const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('tafawuq_session_v7'));
+            const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('tafawuq_session_v9'));
             const [currentUserData, setCurrentUserData] = useState(() => {
-                const saved = localStorage.getItem('tafawuq_session_v7');
+                const saved = localStorage.getItem('tafawuq_session_v9');
                 return saved ? JSON.parse(saved) : null;
             });
 
-            // حالات التنقل والإشعارات
             const [view, setView] = useState('dashboard');
             const [isSidebarOpen, setSidebarOpen] = useState(false);
             const [alert, setAlert] = useState({ show: false, msg: '', type: 'success' });
             
-            // حالة الاتصال بقاعدة البيانات
             const [isSyncing, setIsSyncing] = useState(true);
             const [isOfflineMode, setIsOfflineMode] = useState(false);
             
-            // قواعد البيانات (نحملها من الذاكرة المحلية كإجراء سريع قبل تحميل السحابة)
-            const [teachers, setTeachers] = useState(() => JSON.parse(localStorage.getItem('db_teachers_v7')) || []);
-            const [students, setStudents] = useState(() => JSON.parse(localStorage.getItem('db_students_v7')) || []);
-            const [assignments, setAssignments] = useState(() => JSON.parse(localStorage.getItem('db_assignments_v7')) || []);
-            const [lessons, setLessons] = useState(() => JSON.parse(localStorage.getItem('db_lessons_v7')) || []);
+            const [teachers, setTeachers] = useState(() => JSON.parse(localStorage.getItem('db_teachers_v9')) || []);
+            const [students, setStudents] = useState(() => JSON.parse(localStorage.getItem('db_students_v9')) || []);
+            const [assignments, setAssignments] = useState(() => JSON.parse(localStorage.getItem('db_assignments_v9')) || []);
+            const [lessons, setLessons] = useState(() => JSON.parse(localStorage.getItem('db_lessons_v9')) || []);
             
-            // =========================================================
-            // الاتصال الفعلي والآمن بـ Firebase باستخدام مفاتيحك
-            // =========================================================
+            // دالة المزامنة والانتظار الذكي
             useEffect(() => {
-                const setupFirebase = async () => {
-                    try {
-                        // استدعاء مكتبات جوجل برمجياً
-                        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-                        const { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                let attempts = 0;
+                
+                const checkFirebase = setInterval(() => {
+                    attempts++;
+                    
+                    if (window.fb) {
+                        clearInterval(checkFirebase); 
+                        const { db, collection, onSnapshot } = window.fb;
                         
-                        // مفاتيح مشروعك الحقيقية
-                        const firebaseConfig = {
-                            apiKey: "AIzaSyDwDJCLLIUWRY8rAhUDp7_20qOOd25CWLY",
-                            authDomain: "at-tafawuq.firebaseapp.com",
-                            projectId: "at-tafawuq",
-                            storageBucket: "at-tafawuq.firebasestorage.app",
-                            messagingSenderId: "622444320454",
-                            appId: "1:622444320454:web:d6f148588d27d45b1c69c7"
-                        };
-
-                        // تشغيل التطبيق السحابي
-                        const app = initializeApp(firebaseConfig);
-                        const db = getFirestore(app);
-                        window.fb = { db, doc, setDoc, collection, onSnapshot, deleteDoc };
-                        
-                        // دالة المزامنة لجلب وتحديث البيانات لحظياً
                         const syncData = (collectionName, setterFunction) => {
                             const colRef = collection(db, collectionName);
                             return onSnapshot(colRef, (snapshot) => {
                                 const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                                 setterFunction(data);
-                                localStorage.setItem(`db_${collectionName}_v7`, JSON.stringify(data)); // حفظ احتياطي
+                                localStorage.setItem(`db_${collectionName}_v9`, JSON.stringify(data));
+                            }, (err) => {
+                                console.error("Firestore Sync Error:", err);
+                                if(err.message && err.message.includes("permissions")) {
+                                    setAlert({ show: true, msg: 'تم الاتصال! لكن يجب تعديل قواعد الأمان (Rules) في فايربيس للسماح بحفظ البيانات.', type: 'error' });
+                                }
                             });
                         };
 
-                        // تفعيل المزامنة للجداول الأربعة
                         window.unsubTeachers = syncData('teachers', setTeachers);
                         window.unsubStudents = syncData('students', setStudents);
                         window.unsubAssignments = syncData('assignments', setAssignments);
                         window.unsubLessons = syncData('lessons', setLessons);
                         
-                        setIsOfflineMode(false); // النظام متصل!
+                        setIsOfflineMode(false);
+                        setIsSyncing(false);
                         
-                    } catch (error) {
-                        console.error("خطأ في السحابة:", error);
-                        setIsOfflineMode(true); // فشل الاتصال (إنترنت مقطوع مثلاً)
-                    } finally {
-                        setIsSyncing(false); // إنهاء شاشة التحميل الأولية
+                    } else if (window.firebaseError || attempts > 20) { 
+                        clearInterval(checkFirebase);
+                        setIsOfflineMode(true);
+                        setIsSyncing(false);
                     }
-                };
-
-                setupFirebase();
+                }, 500);
 
                 return () => {
-                    // إغلاق قنوات الاتصال عند إغلاق الصفحة لتوفير الموارد
+                    clearInterval(checkFirebase);
                     if(window.unsubTeachers) window.unsubTeachers();
                     if(window.unsubStudents) window.unsubStudents();
                     if(window.unsubAssignments) window.unsubAssignments();
@@ -169,7 +175,6 @@
                 };
             }, []);
 
-            // دالة الإضافة، التعديل، والحذف (تحدث الواجهة فوراً ثم ترفع للسحابة)
             const dbOp = async (collectionName, data, documentId = null) => {
                 const id = documentId || Date.now().toString(); 
                 
@@ -198,17 +203,15 @@
                             showAlert('تم الحفظ السحابي بنجاح!');
                         }
                     } catch(e) { 
-                        showAlert('حدث خطأ في الاتصال بالإنترنت', 'error');
+                        showAlert('لا توجد صلاحية للحفظ. يرجى تعديل الـ Rules في Firebase', 'error');
                     }
                 }
                 return true;
             };
 
-            // حالات النماذج
             const [loginForm, setLoginForm] = useState({ user: '', pass: '' });
             const [showPassword, setShowPassword] = useState(false);
             const [rememberMe, setRememberMe] = useState(true); 
-
             const [editingTeacher, setEditingTeacher] = useState(null);
             const [editingStudent, setEditingStudent] = useState(null);
             const [editingAssignment, setEditingAssignment] = useState(null);
@@ -221,10 +224,9 @@
             const handleLogout = () => {
                 setIsLoggedIn(false);
                 setCurrentUserData(null);
-                localStorage.removeItem('tafawuq_session_v7'); 
+                localStorage.removeItem('tafawuq_session_v9'); 
             };
 
-            // دوال المساعدة لربط المعرفات (IDs) بالأسماء
             const getStudentName = (id) => students.find(s => s.id === id)?.name || 'طالب غير متوفر';
             const getTeacherName = (id) => teachers.find(t => t.id === id)?.name || 'معلم غير متوفر';
 
@@ -232,7 +234,6 @@
             const myLessons = lessons.filter(l => l.teacherId === currentUserData?.id);
             const myAssignedStudents = assignments.filter(a => a.teacherId === currentUserData?.id);
             
-            // منع التكرار في قائمة طلاب المعلم
             const uniqueStudentsForDropdown = [];
             const seenStudentNames = new Set();
             myAssignedStudents.forEach(a => {
@@ -245,17 +246,15 @@
             
             const totalAdminHours = lessons.reduce((sum, l) => sum + Number(l.hours) + (Number(l.mins) / 60), 0);
 
-            // واجهة شاشة التحميل السحابية
             if (isSyncing) {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center bg-[#1a3a5f] text-white font-black">
                         <Icon name="Cloud" size={60} className="text-[#c5a044] mb-4 animate-pulse" />
-                        <div className="text-xl tracking-widest uppercase">جاري التوصيل بقاعدة البيانات...</div>
+                        <div className="text-xl tracking-widest uppercase">جاري الاتصال بقاعدة البيانات...</div>
                     </div>
                 );
             }
 
-            // واجهة تسجيل الدخول
             if (!isLoggedIn) {
                 return (
                     <div className="min-h-screen flex items-center justify-center p-4 login-page-bg text-right font-black">
@@ -269,7 +268,7 @@
 
                             {isOfflineMode && (
                                 <div className="mb-6 p-4 bg-red-50 border-r-4 border-red-500 text-red-700 text-xs rounded-lg">
-                                    تنبيه: لا يوجد اتصال بسيرفر البيانات. تحقق من الإنترنت الخاص بك.
+                                    تنبيه: أنت تعمل في وضع "دون اتصال". البيانات لا تتشارك بين الأجهزة حالياً. تأكد من إعدادات (Firebase).
                                 </div>
                             )}
 
@@ -279,7 +278,6 @@
                                 const p = loginForm.pass.trim();
                                 let validUser = null;
                                 
-                                // بيانات دخول المدير
                                 if (u === 'zakiabuillan' && p === '100200300') {
                                     validUser = { id: 'admin', name: 'زكي أبو علان', role: 'admin' };
                                 } else {
@@ -291,7 +289,7 @@
                                     setIsLoggedIn(true); 
                                     setCurrentUserData(validUser);
                                     if (rememberMe) {
-                                        localStorage.setItem('tafawuq_session_v7', JSON.stringify(validUser));
+                                        localStorage.setItem('tafawuq_session_v9', JSON.stringify(validUser));
                                     }
                                 } else {
                                     showAlert('بيانات الدخول غير صحيحة', 'error');
@@ -322,7 +320,6 @@
                 );
             }
 
-            // واجهة لوحة التحكم
             return (
                 <div className="min-h-screen flex flex-row-reverse bg-slate-50 font-black text-right uppercase">
                     {alert.show && <div className={`alert-toast px-8 py-4 rounded-3xl text-white shadow-2xl flex items-center gap-3 border-b-4 ${alert.type === 'success' ? 'bg-emerald-600 border-emerald-800' : 'bg-red-600 border-red-800'}`}><Icon name="ShieldCheck" size={28} />{alert.msg}</div>}
@@ -358,7 +355,6 @@
                             <h2 className="text-xl text-slate-800">{view}</h2>
                         </header>
 
-                        {/* --- الواجهة: الرئيسية --- */}
                         {view === 'dashboard' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="bg-white p-8 rounded-3xl shadow-lg border-t-8 border-royal-gold text-center">
@@ -374,12 +370,11 @@
                             </div>
                         )}
 
-                        {/* --- الواجهة: إدارة المعلمين --- */}
                         {view === 'mgmt-teachers' && currentUserData.role === 'admin' && (
                             <div className="space-y-8 animate-fade-in">
                                 <div className={`bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] ${editingTeacher ? 'border-[#c5a044] bg-amber-50' : 'border-[#1a3a5f]'}`}>
                                     <h3 className="text-2xl mb-6 text-[#1a3a5f] flex items-center gap-2"><Icon name={editingTeacher ? "Edit" : "UserPlus"} className="text-[#c5a044]" /> {editingTeacher ? "تعديل المعلم" : "إضافة معلم جديد"}</h3>
-                                    <form key={editingTeacher ? editingTeacher.id : 'new'} className="space-y-4" onSubmit={(e) => {
+                                    <form key={editingTeacher ? editingTeacher.id : 'new'} className="space-y-4" onSubmit={async (e) => {
                                         e.preventDefault();
                                         const f = e.target.elements;
                                         const cleanUsername = f.user.value.trim().toLowerCase();
@@ -388,7 +383,7 @@
                                             showAlert('تنبيه: اسم المستخدم هذا موجود مسبقاً!', 'error'); return;
                                         }
                                         const teacherData = { name: f.name.value.trim(), rate: parseFloat(f.rate.value), username: cleanUsername, password: f.pass.value.trim() };
-                                        dbOp('teachers', teacherData, editingTeacher?.id);
+                                        await dbOp('teachers', teacherData, editingTeacher?.id);
                                         e.target.reset(); setEditingTeacher(null);
                                     }}>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -429,18 +424,22 @@
                             </div>
                         )}
 
-                        {/* --- الواجهة: تسجيل الطلاب --- */}
+                        {/* ========================================================= */}
+                        {/* واجهة تسجيل الطلاب الفعلية (بدون أي رسائل مخفية) */}
+                        {/* ========================================================= */}
                         {view === 'mgmt-students' && currentUserData.role === 'admin' && (
                             <div className="space-y-8 animate-fade-in">
                                 <div className={`bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] ${editingStudent ? 'border-[#c5a044] bg-amber-50' : 'border-[#1a3a5f]'}`}>
                                     <h3 className="text-2xl mb-6 text-[#1a3a5f] flex items-center gap-2"><Icon name={editingStudent ? "Edit" : "UserPlus"} className="text-[#c5a044]" /> {editingStudent ? "تعديل بيانات طالب" : "تسجيل طالب جديد"}</h3>
-                                    <form key={editingStudent ? editingStudent.id : 'new'} className="flex flex-col md:flex-row gap-4" onSubmit={(e) => {
+                                    <form key={editingStudent ? editingStudent.id : 'new'} className="flex flex-col md:flex-row gap-4" onSubmit={async (e) => {
                                         e.preventDefault();
                                         const name = e.target.name.value.trim();
+                                        
                                         if (!editingStudent && students.some(s => s.name === name)) {
                                             showAlert('تنبيه: اسم الطالب مسجل مسبقاً!', 'error'); return;
                                         }
-                                        dbOp('students', { name }, editingStudent?.id);
+
+                                        await dbOp('students', { name }, editingStudent?.id);
                                         e.target.reset(); setEditingStudent(null);
                                     }}>
                                         <input name="name" defaultValue={editingStudent?.name || ''} placeholder="الاسم الرباعي للطالب" className="flex-1 clear-input" required />
@@ -477,7 +476,7 @@
                             <div className="space-y-8 animate-fade-in">
                                 <div className={`bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] ${editingAssignment ? 'border-[#c5a044] bg-amber-50' : 'border-[#1a3a5f]'}`}>
                                     <h3 className="text-2xl mb-6 text-[#1a3a5f] flex items-center gap-2"><Icon name="Link" className="text-[#c5a044]" /> {editingAssignment ? "تعديل التنسيب" : "تنسيب طالب لمعلم"}</h3>
-                                    <form key={editingAssignment ? editingAssignment.id : 'new'} className="space-y-4" onSubmit={(e) => {
+                                    <form key={editingAssignment ? editingAssignment.id : 'new'} className="space-y-4" onSubmit={async (e) => {
                                         e.preventDefault();
                                         const teacherId = e.target.teacherId.value;
                                         const studentId = e.target.studentId.value;
@@ -488,7 +487,8 @@
                                                 showAlert('تنبيه: هذا الطالب منسوب بالفعل لهذا المعلم مسبقاً!', 'error'); return; 
                                             }
                                         }
-                                        dbOp('assignments', { teacherId, studentId }, editingAssignment?.id);
+
+                                        await dbOp('assignments', { teacherId, studentId }, editingAssignment?.id);
                                         setEditingAssignment(null);
                                     }}>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -530,10 +530,10 @@
                         {view === 'add-lesson' && currentUserData.role === 'teacher' && (
                             <div className="max-w-xl mx-auto bg-white p-8 rounded-[2rem] shadow-xl border-t-[8px] border-[#c5a044] animate-fade-in">
                                 <h3 className="text-2xl mb-8 text-[#1a3a5f] text-center flex items-center justify-center gap-2"><Icon name="PlusSquare" className="text-[#c5a044]" /> تسجيل حصة تعليمية</h3>
-                                <form className="space-y-5" onSubmit={(e) => {
+                                <form className="space-y-5" onSubmit={async (e) => {
                                     e.preventDefault();
                                     const f = e.target.elements;
-                                    dbOp('lessons', { 
+                                    await dbOp('lessons', { 
                                         teacherId: currentUserData.id, 
                                         studentId: f.studentId.value, 
                                         subject: f.subject.value, 
